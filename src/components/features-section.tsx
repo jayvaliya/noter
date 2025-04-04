@@ -1,4 +1,4 @@
-import { BsSearch, BsLaptop, BsPeople, BsLightbulb } from 'react-icons/bs';
+import { BsSearch, BsLaptop, BsPeople } from 'react-icons/bs';
 
 export function FeaturesSection() {
     const features = [
@@ -17,11 +17,11 @@ export function FeaturesSection() {
             description: "Share notes with classmates and study together more effectively.",
             icon: <BsPeople className="h-6 w-6" />,
         },
-        {
-            title: "Smart Suggestions",
-            description: "Get intelligent recommendations based on your study patterns.",
-            icon: <BsLightbulb className="h-6 w-6" />,
-        },
+        // {
+        //     title: "Smart Suggestions",
+        //     description: "Get intelligent recommendations based on your study patterns.",
+        //     icon: <BsLightbulb className="h-6 w-6" />,
+        // },
     ];
 
     return (

@@ -6,15 +6,17 @@ import { useSession } from 'next-auth/react';
 import { HeroSection } from '@/components/hero-section';
 import { FeaturesSection } from '@/components/features-section';
 import { Footer } from '@/components/footer';
+import { HowItWorks } from '@/components/how-it-works';
+import { RecentPublicNotes } from '@/components/recent-public-notes';
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
 
-  // Redirect to dashboard if already authenticated
+  // Redirect to explore if already authenticated
   useEffect(() => {
     if (status === "authenticated") {
-      router.push('/dashboard');
+      router.push('/explore');
     }
   }, [status, router]);
 
@@ -27,11 +29,12 @@ export default function Home() {
     );
   }
 
-  // Only render home page content if not authenticated
   return (
     <main>
       <HeroSection />
+      <RecentPublicNotes className="bg-neutral-900 py-16" />
       <FeaturesSection />
+      <HowItWorks />
       <Footer />
     </main>
   );

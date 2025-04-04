@@ -25,16 +25,16 @@ export function HeroSection() {
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <Link
-                                href="/signin"
+                                href="/notes"
                                 className="px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors text-center"
                             >
-                                Get Started Free
+                                Explore Notes
                             </Link>
                             <Link
-                                href="/dashboard"
+                                href="/signin"
                                 className="px-6 py-3 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white font-medium transition-colors text-center"
                             >
-                                Explore Notes
+                                Get Started Free
                             </Link>
                         </div>
                     </div>

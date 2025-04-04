@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",
@@ -20,6 +22,7 @@
     "@tiptap/starter-kit": "^2.11.7",
     "bcrypt": "^5.1.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.6.3",
     "isomorphic-dompurify": "^2.22.0",
     "next": "15.2.4",
     "next-auth": "^4.24.11",

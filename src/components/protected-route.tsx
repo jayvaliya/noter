@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, ReactNode } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { ProtectedRouteProps } from '@/types';
 
-export function ProtectedRoute({ children }: { children: ReactNode }) {
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const { status } = useSession();
     const router = useRouter();
 

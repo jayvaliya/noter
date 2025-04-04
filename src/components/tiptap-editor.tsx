@@ -10,7 +10,7 @@ import Highlight from '@tiptap/extension-highlight';
 import { useState } from 'react';
 import {
     BsTypeBold, BsTypeItalic, BsTypeStrikethrough,
-    BsCode, BsListOl, BsListUl, BsLink45Deg,
+    BsListOl, BsListUl, BsLink45Deg,
     BsArrowCounterclockwise, BsArrowClockwise,
     BsTextLeft, BsTextCenter, BsTextRight, BsTextParagraph,
     BsHighlights, BsThreeDotsVertical,
@@ -19,12 +19,7 @@ import { PiHighlighterFill } from 'react-icons/pi';
 import { FaQuoteLeft } from 'react-icons/fa';
 import { HiOutlineCode } from 'react-icons/hi';
 import { HiOutlineCodeBracket } from 'react-icons/hi2';
-
-interface TipTapEditorProps {
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-}
+import { TipTapEditorProps, FontOption } from '@/types';
 
 export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...' }: TipTapEditorProps) => {
     const [isLinkInputVisible, setIsLinkInputVisible] = useState(false);
@@ -32,7 +27,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
     const [showFontOptions, setShowFontOptions] = useState(false);
 
     // Define available fonts
-    const fontOptions = [
+    const fontOptions: FontOption[] = [
         { name: 'Default', value: 'var(--font-inter)' },
         { name: 'Sans Serif', value: 'Inter, sans-serif' },
         { name: 'Serif', value: 'Georgia, serif' },
@@ -90,7 +85,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
         if (linkUrl) {
             // Check if URL is valid
             try {
-                const url = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
+                const url = linkUrl.startsWith('http') ? linkUrl : "https://" + linkUrl;
                 new URL(url);
 
                 editor
@@ -102,7 +97,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
 
                 setIsLinkInputVisible(false);
                 setLinkUrl('');
-            } catch (e) {
+            } catch {
                 alert('Please enter a valid URL');
             }
         } else {
@@ -120,21 +115,6 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
         editor.chain().focus().setMark('textStyle', { fontFamily }).run();
         setShowFontOptions(false);
     };
-
-    // Keyboard shortcuts information
-    const keyboardShortcuts = [
-        { key: 'Ctrl+B', description: 'Bold' },
-        { key: 'Ctrl+I', description: 'Italic' },
-        { key: 'Ctrl+E', description: 'Center align' },
-        { key: 'Ctrl+Shift+L', description: 'Left align' },
-        { key: 'Ctrl+Shift+R', description: 'Right align' },
-        { key: 'Ctrl+Shift+7', description: 'Ordered list' },
-        { key: 'Ctrl+Shift+8', description: 'Bullet list' },
-        { key: 'Ctrl+Shift+9', description: 'Blockquote' },
-        { key: 'Ctrl+K', description: 'Create link' },
-        { key: 'Ctrl+Z', description: 'Undo' },
-        { key: 'Ctrl+Y', description: 'Redo' },
-    ];
 
     return (
         <div className="bg-zinc-800/30 backdrop-blur-sm border border-zinc-700 rounded-lg overflow-hidden">
@@ -203,6 +183,14 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                     title="Code Block"
                 >
                     <HiOutlineCodeBracket />
+                </button>
+
+                <button
+                    onClick={() => editor.chain().focus().toggleCode().run()}
+                    className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 ${editor.isActive('code') ? 'bg-zinc-700 text-white' : ''}`}
+                    title="Inline Code"
+                >
+                    <HiOutlineCode />
                 </button>
 
                 <div className="w-px h-6 mx-1 bg-zinc-700 self-center"></div>
@@ -325,15 +313,10 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                     onClick={() => editor.chain().focus().redo().run()}
                     disabled={!editor.can().redo()}
                     className="p-2 rounded hover:bg-zinc-700 text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Redo (Ctrl+Y)"
+                    title="Redo (Ctrl+Shift+Z)"
                 >
                     <BsArrowClockwise />
                 </button>
-            </div>
-
-            {/* Keyboard Shortcuts Info */}
-            <div className="bg-zinc-900/50 py-1 px-2 text-xs text-zinc-500 hidden sm:block">
-                <span>Tip: Use keyboard shortcuts like Ctrl+B for bold, Ctrl+I for italic, Ctrl+K for links</span>
             </div>
 
             {/* Editor content */}

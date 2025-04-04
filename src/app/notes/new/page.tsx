@@ -7,13 +7,26 @@ import { BsSave, BsArrowLeft } from 'react-icons/bs';
 import Link from 'next/link';
 import { TipTapEditor } from '@/components/tiptap-editor';
 
+// Define API request type
+interface CreateNoteRequest {
+    title: string;
+    content: string;
+    isPublic: boolean;
+}
+
+// Define API error response type
+interface ApiErrorResponse {
+    message: string;
+}
+
 export default function NewNote() {
-    const { data: session, status } = useSession();
+    const { status } = useSession();
     const router = useRouter();
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState('');
+    const [title, setTitle] = useState<string>('');
+    const [content, setContent] = useState<string>('');
+    const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
+    const [isPublic, setIsPublic] = useState<boolean>(true);
 
     // Check if user is authenticated
     useEffect(() => {
@@ -38,26 +51,32 @@ export default function NewNote() {
         setError('');
 
         try {
+            // Create request payload with proper type
+            const requestData: CreateNoteRequest = {
+                title,
+                content,
+                isPublic,
+            };
+
             const response = await fetch('/api/notes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    title,
-                    content,
-                }),
+                body: JSON.stringify(requestData),
             });
 
             if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Failed to save note');
+                const errorData = await response.json() as ApiErrorResponse;
+                throw new Error(errorData.message || 'Failed to save note');
             }
 
             // Navigate to the dashboard
-            router.push('/dashboard');
-        } catch (err: any) {
-            setError(err.message);
+            router.push('/notes');
+        } catch (err) {
+            // Proper error handling with type narrowing
+            console.error('Error saving note:', err);
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred');
         } finally {
             setIsSaving(false);
         }
@@ -79,7 +98,7 @@ export default function NewNote() {
                 <div className="mb-8 flex items-center justify-between">
                     <div className="flex items-center">
                         <Link
-                            href="/dashboard"
+                            href="/notes"
                             className="text-zinc-400 hover:text-white mr-4 p-2 rounded-full hover:bg-zinc-800 transition-colors"
                         >
                             <BsArrowLeft size={20} />
@@ -122,6 +141,28 @@ export default function NewNote() {
                         placeholder="Note Title"
                         className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 text-white text-xl font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
+                </div>
+
+                {/* Public/Private toggle */}
+                <div className="flex items-center mt-4 mb-6">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={isPublic}
+                            onChange={() => setIsPublic(!isPublic)}
+                            className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                        <span className="ml-3 text-sm font-medium text-zinc-300">
+                            {isPublic ? 'Public' : 'Private'}
+                        </span>
+                    </label>
+                    <span className="ml-2 text-xs text-zinc-500">
+                        {isPublic ? 'Anyone can view this note' : 'Only you can view this note'}
+                    </span>
+                    <span className="ml-2 text-xs text-zinc-500">
+                        {"( We recommend keeping your notes public so others can benefit from them.)"}
+                    </span>
                 </div>
 
                 {/* TipTap Editor */}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
     try {
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
         const userId = session.user.id;
 
         // Parse request body
-        const { title, content } = await req.json();
+        const { title, content, isPublic = true } = await req.json();
 
         // Validate inputs
         if (!title || !content) {
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
             data: {
                 title,
                 content,
+                isPublic,
                 authorId: userId,
             },
         });
@@ -48,35 +49,56 @@ export async function POST(req: NextRequest) {
     }
 }
 
-export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function GET() {
     try {
-        // Check if user is authenticated
         const session = await getServerSession(authOptions);
 
-        if (!session || !session.user) {
-            return NextResponse.json(
-                { message: 'You must be logged in to view notes' },
-                { status: 401 }
-            );
+        // Get the user ID if authenticated
+        const userId = session?.user?.id;
+
+        // If user is authenticated, return their notes
+        if (userId) {
+            const notes = await prisma.note.findMany({
+                where: {
+                    authorId: userId,
+                },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            name: true,
+                            image: true,
+                        }
+                    },
+                    bookmarks: {
+                        where: {
+                            userId: userId,
+                        },
+                        select: {
+                            id: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    updatedAt: 'desc',
+                },
+            });
+
+            // Transform to include isBookmarked property
+            const notesWithBookmarkStatus = notes.map(note => ({
+                ...note,
+                isBookmarked: note.bookmarks.length > 0,
+                bookmarks: undefined,
+            }));
+
+            return NextResponse.json(notesWithBookmarkStatus);
         }
 
-        // Get user ID from session
-        const userId = session.user.id;
-
-        // Get all notes for the user
-        const notes = await prisma.note.findMany({
-            where: {
-                authorId: userId,
-            },
-            orderBy: {
-                updatedAt: 'desc',
-            },
-        });
-
-        return NextResponse.json(notes);
+        // If not authenticated, return error
+        return NextResponse.json(
+            { message: 'Not authenticated' },
+            { status: 401 }
+        );
     } catch (error) {
         console.error('Error fetching notes:', error);
         return NextResponse.json(

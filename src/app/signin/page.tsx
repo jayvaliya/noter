@@ -1,18 +1,30 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, SignInResponse } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import Link from "next/link";
-// Import React Icons
 import { FcGoogle } from "react-icons/fc";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
+
+// Define form data structure
+interface AuthFormData {
+    name: string;
+    email: string;
+    password: string;
+}
+
+// Define registration response
+interface RegisterResponse {
+    success?: boolean;
+    error?: string;
+    message?: string;
+}
 
 export default function SignIn() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [authMode, setAuthMode] = useState<"signin" | "register">("signin");
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<AuthFormData>({
         name: "",
         email: "",
         password: "",
@@ -38,7 +50,6 @@ export default function SignIn() {
         try {
             if (authMode === "register") {
                 // Register the user
-                console.log("Submitting registration...");
                 const response = await fetch("/api/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -49,23 +60,18 @@ export default function SignIn() {
                     }),
                 });
 
-                console.log("Registration response status:", response.status);
-                const data = await response.json();
-                console.log("Registration response data:", data);
+                const data = await response.json() as RegisterResponse;
 
                 if (!response.ok) {
                     throw new Error(data.error || "Registration failed");
                 }
 
                 // Registration successful, now sign in
-                console.log("Registration successful, signing in...");
                 const result = await signIn("credentials", {
                     redirect: false,
                     email: formData.email,
                     password: formData.password,
-                });
-
-                console.log("Sign in result:", result);
+                }) as SignInResponse;
 
                 if (result?.error) {
                     throw new Error(result.error || "Sign in failed after registration");
@@ -82,9 +88,7 @@ export default function SignIn() {
                     redirect: false,
                     email: formData.email,
                     password: formData.password,
-                });
-
-                console.log("Sign in result:", result);
+                }) as SignInResponse;
 
                 if (result?.error) {
                     throw new Error("Invalid email or password");
@@ -96,9 +100,15 @@ export default function SignIn() {
                     router.push("/");
                 }, 300);
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error("Authentication error:", error);
-            setError(error.message);
+
+            // Use type narrowing for safer access to error.message
+            if (error instanceof Error) {
+                setError(error.message);
+            } else {
+                setError("An unexpected error occurred");
+            }
         } finally {
             if (!isSuccess) {
                 setIsLoading(false);
@@ -110,7 +120,7 @@ export default function SignIn() {
     useEffect(() => {
         if (isSuccess) {
             const timer = setTimeout(() => {
-                router.push("/dashboard");
+                router.push("/notes");
             }, 300);
 
             return () => clearTimeout(timer);

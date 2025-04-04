@@ -24,7 +24,7 @@ export function Footer() {
                         </p>
                         <div className="mt-6 flex space-x-4">
                             {socialIcons.map((social) => (
-                                <a
+                                <Link
                                     key={social.name}
                                     href={social.url}
                                     target="_blank"
@@ -35,7 +35,7 @@ export function Footer() {
                                     <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center hover:bg-neutral-700 transition-colors">
                                         {social.icon}
                                     </div>
-                                </a>
+                                </Link>
                             ))}
                         </div>
                     </div>

@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { BsBookmarkFill, BsExclamationCircle, BsArrowLeft } from 'react-icons/bs';
 import { ProtectedRoute } from '@/components/protected-route';
 import { NoteCard } from '@/components/note-card';
+import Loading from '@/components/loading';
 
 // Define proper author type
 interface Author {
@@ -87,9 +88,7 @@ export default function BookmarksPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
-            </div>
+            <Loading size="large" fullScreen={true} />
         );
     }
 

@@ -8,35 +8,76 @@ import Link from 'next/link';
 import { TipTapEditor } from '@/components/tiptap-editor';
 import Loading from '@/components/loading';
 
-// Define API request type
-interface CreateNoteRequest {
+// Define API response interfaces
+interface ApiNote {
+    id: string;
     title: string;
     content: string;
     isPublic: boolean;
+    authorId: string;
 }
 
-// Define API error response type
 interface ApiErrorResponse {
     message: string;
 }
 
-export default function NewNote() {
-    const { status } = useSession();
+export default function EditNote({ params }: { params: { id: string } }) {
+    const { status, data: session } = useSession();
     const router = useRouter();
+    const noteId = params.id;
+
     const [title, setTitle] = useState<string>('');
     const [content, setContent] = useState<string>('');
-    const [isSaving, setIsSaving] = useState<boolean>(false);
-    const [error, setError] = useState<string>('');
     const [isPublic, setIsPublic] = useState<boolean>(true);
+    const [originalNote, setOriginalNote] = useState<ApiNote | null>(null);
 
-    // Check if user is authenticated
+    const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string>('');
+
+    // Fetch the note data when the component mounts
     useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push('/signin');
-        }
-    }, [status, router]);
+        const fetchNote = async () => {
+            if (status === "unauthenticated") {
+                router.push('/signin');
+                return;
+            }
 
-    // Handle saving the note
+            setIsLoading(true);
+            try {
+                const response = await fetch(`/api/notes/${noteId}`);
+
+                if (!response.ok) {
+                    const errorData = await response.json() as ApiErrorResponse;
+                    throw new Error(errorData.message || 'Failed to fetch note');
+                }
+
+                const noteData = await response.json() as ApiNote;
+
+                // Check if user is the author
+                if (session?.user?.id !== noteData.authorId) {
+                    throw new Error("You don't have permission to edit this note");
+                }
+
+                // Set form state with note data
+                setTitle(noteData.title);
+                setContent(noteData.content);
+                setIsPublic(noteData.isPublic);
+                setOriginalNote(noteData);
+            } catch (err) {
+                console.error('Error fetching note:', err);
+                setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (status !== "loading") {
+            fetchNote();
+        }
+    }, [noteId, router, status, session]);
+
+    // Handle saving the updated note
     const handleSave = async () => {
         if (!title.trim()) {
             setError('Please enter a title for your note');
@@ -52,41 +93,58 @@ export default function NewNote() {
         setError('');
 
         try {
-            // Create request payload with proper type
-            const requestData: CreateNoteRequest = {
-                title,
-                content,
-                isPublic,
-            };
-
-            const response = await fetch('/api/notes', {
-                method: 'POST',
+            const response = await fetch(`/api/notes/${noteId}`, {
+                method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestData),
+                body: JSON.stringify({
+                    title,
+                    content,
+                    isPublic,
+                }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json() as ApiErrorResponse;
-                throw new Error(errorData.message || 'Failed to save note');
+                throw new Error(errorData.message || 'Failed to update note');
             }
 
-            // Navigate to the dashboard
-            router.push('/notes');
+            // Navigate back to the note view
+            router.push(`/notes/${noteId}`);
         } catch (err) {
-            // Proper error handling with type narrowing
-            console.error('Error saving note:', err);
+            console.error('Error updating note:', err);
             setError(err instanceof Error ? err.message : 'An unexpected error occurred');
         } finally {
             setIsSaving(false);
         }
     };
 
-    // Show loading state while checking authentication
-    if (status === "loading") {
+    // Show loading state
+    if (status === "loading" || isLoading) {
+        return <Loading size="large" fullScreen={true} />;
+    }
+
+    // Show error
+    if (error && !originalNote) {
         return (
-            <Loading size="large" fullScreen={true} />
+            <div className="min-h-screen bg-zinc-900 py-12 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-5xl mx-auto">
+                    <div className="mb-8 flex items-center">
+                        <Link
+                            href="/notes"
+                            className="text-zinc-400 hover:text-white mr-4 p-2 rounded-full hover:bg-zinc-800 transition-colors"
+                        >
+                            <BsArrowLeft size={20} />
+                            <span className="sr-only">Back to notes</span>
+                        </Link>
+                    </div>
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 text-center">
+                        <h2 className="text-xl font-bold text-red-500 mb-2">Error</h2>
+                        <p className="text-zinc-300">{error}</p>
+                    </div>
+                </div>
+            </div>
         );
     }
 
@@ -97,13 +155,13 @@ export default function NewNote() {
                 <div className="mb-8 flex items-center justify-between">
                     <div className="flex items-center">
                         <Link
-                            href="/notes"
+                            href={`/notes/${noteId}`}
                             className="text-zinc-400 hover:text-white mr-4 p-2 rounded-full hover:bg-zinc-800 transition-colors"
                         >
                             <BsArrowLeft size={20} />
-                            <span className="sr-only">Back to dashboard</span>
+                            <span className="sr-only">Back to note</span>
                         </Link>
-                        <h1 className="text-2xl font-bold text-white">Create New Note</h1>
+                        <h1 className="text-2xl font-bold text-white">Edit Note</h1>
                     </div>
                     <button
                         onClick={handleSave}
@@ -111,18 +169,18 @@ export default function NewNote() {
                         className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSaving ? (
-                            <Loading size="small" />
+                            <Loading size="small" color="white" />
                         ) : (
                             <>
                                 <BsSave />
-                                <span>Save Note</span>
+                                <span>Save Changes</span>
                             </>
                         )}
                     </button>
                 </div>
 
                 {/* Error message */}
-                {error && (
+                {error && originalNote && (
                     <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 text-sm">
                         {error}
                     </div>
@@ -155,9 +213,6 @@ export default function NewNote() {
                     </label>
                     <span className="ml-2 text-xs text-zinc-500">
                         {isPublic ? 'Anyone can view this note' : 'Only you can view this note'}
-                    </span>
-                    <span className="ml-2 text-xs text-zinc-500">
-                        {"( We recommend keeping your notes public so others can benefit from them.)"}
                     </span>
                 </div>
 

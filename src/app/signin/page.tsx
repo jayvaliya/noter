@@ -4,7 +4,7 @@ import { signIn, SignInResponse } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import Loading from "@/components/loading";
 
 // Define form data structure
 interface AuthFormData {
@@ -161,7 +161,7 @@ export default function SignIn() {
                         className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-medium py-3 px-4 rounded-lg transition duration-300 mb-4"
                     >
                         {isLoading ? (
-                            <AiOutlineLoading3Quarters className="w-5 h-5 text-gray-800 animate-spin" />
+                            <Loading size="small" />
                         ) : (
                             <>
                                 <FcGoogle size={24} />
@@ -247,7 +247,7 @@ export default function SignIn() {
                         >
                             {isLoading ? (
                                 <div className="flex justify-center">
-                                    <AiOutlineLoading3Quarters className="w-5 h-5 text-white animate-spin" />
+                                    <Loading size="small" />
                                 </div>
                             ) : authMode === "signin" ? (
                                 "Sign In"

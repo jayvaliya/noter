@@ -9,10 +9,10 @@ export async function GET(
     context: { params: { id: string } }
 ): Promise<NextResponse<Note | { message: string }>> {
     try {
-        const { id } = context.params;
+        const resolvedParams = await context.params;
+        const noteId = resolvedParams.id;
         const session = await getServerSession(authOptions);
         const userId = session?.user?.id;
-        const noteId = id;
 
         // Fetch the note with author information
         const note = await prisma.note.findUnique({
@@ -130,7 +130,7 @@ export async function DELETE(
     }
 }
 
-// Update to handle privacy setting changes
+// Update to handle privacy setting changes and content updates
 export async function PATCH(
     req: NextRequest,
     { params }: { params: { id: string } }

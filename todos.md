@@ -2,6 +2,7 @@
 
 ## Yet to do
 
+- better loading animation everywhere.
 - edit Notes.
 - add AI Summarization.
 - Folder structure (No nested folders. Only root).

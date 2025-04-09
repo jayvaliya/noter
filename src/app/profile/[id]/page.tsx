@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { BsPersonFill, BsBookmarkFill, BsArrowLeft, BsGlobe } from 'react-icons/bs';
 import { NoteCard } from '@/components/note-card';
 import { Note } from '@/types';
+import Loading from '@/components/loading';
 
 // API response note interface (with string dates)
 interface ApiNote {
@@ -142,9 +143,7 @@ export default function ProfilePage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
-            </div>
+            <Loading size="large" fullScreen={true} />
         );
     }
 
@@ -279,8 +278,8 @@ export default function ProfilePage() {
                                         className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors disabled:opacity-50"
                                     >
                                         {loadingMore ? (
-                                            <div className="flex items-center justify-center">
-                                                <div className="animate-spin mr-2 h-4 w-4 border-2 border-zinc-300 border-t-transparent rounded-full"></div>
+                                            <div className="flex gap-1.5 items-center justify-center">
+                                                <Loading size="small" />
                                                 Loading more...
                                             </div>
                                         ) : (

@@ -57,6 +57,11 @@ export function Navbar() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
+    // Close mobile menu when route changes
+    useEffect(() => {
+        setIsMenuOpen(false);
+    }, [pathname]);
+
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
@@ -66,12 +71,14 @@ export function Navbar() {
     };
 
     const handleSignIn = () => {
+        setIsMenuOpen(false); // Close mobile menu
         router.push('/signin');
     };
 
     const handleSignOut = async () => {
         try {
             setIsProfileDropdownOpen(false);
+            setIsMenuOpen(false); // Close mobile menu
             await signOut({ redirect: true, callbackUrl: '/' });
         } catch (error) {
             console.error("Error signing out:", error);
@@ -80,8 +87,10 @@ export function Navbar() {
 
     const handleProfileClick = () => {
         if (session?.user?.id) {
+            setIsMenuOpen(false); // Close mobile menu
             router.push("/profile/" + session.user.id);
         } else {
+            setIsMenuOpen(false); // Close mobile menu
             router.push('/profile');
         }
         setIsProfileDropdownOpen(false);
@@ -108,17 +117,35 @@ export function Navbar() {
             }`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
-                    {/* Logo/Brand */}
+                    {/* Logo/Brand with conditional link */}
                     <div className="flex-shrink-0">
-                        <Link href="/" className="group flex items-center">
-                            <div className="relative w-8 h-8 mr-2 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center overflow-hidden shadow-lg">
-                                <span className="text-white text-lg font-bold">N</span>
-                                <div className="absolute inset-0 bg-gradient-to-tl from-emerald-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            </div>
-                            <span className="text-white text-xl font-bold tracking-tight bg-clip-text bg-gradient-to-r from-white to-gray-300">
-                                Noter
-                            </span>
-                        </Link>
+                        {isAuthenticated ? (
+                            <Link
+                                href="/explore"
+                                className="group flex items-center"
+                            >
+                                <div className="relative w-8 h-8 mr-2 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center overflow-hidden shadow-lg">
+                                    <span className="text-white text-lg font-bold">N</span>
+                                    <div className="absolute inset-0 bg-gradient-to-tl from-emerald-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                </div>
+                                <span className="text-white text-xl font-bold tracking-tight bg-clip-text bg-gradient-to-r from-white to-gray-300">
+                                    Noter
+                                </span>
+                            </Link>
+                        ) : (
+                            <Link
+                                href="/"
+                                className="group flex items-center"
+                            >
+                                <div className="relative w-8 h-8 mr-2 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center overflow-hidden shadow-lg">
+                                    <span className="text-white text-lg font-bold">N</span>
+                                    <div className="absolute inset-0 bg-gradient-to-tl from-emerald-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                </div>
+                                <span className="text-white text-xl font-bold tracking-tight bg-clip-text bg-gradient-to-r from-white to-gray-300">
+                                    Noter
+                                </span>
+                            </Link>
+                        )}
                     </div>
 
                     {/* Desktop Menu */}

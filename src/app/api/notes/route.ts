@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 
+// Create new note.
 export async function POST(req: NextRequest) {
     try {
         // Check if user is authenticated
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
+// Fetch all notes for the authenticated user.
 export async function GET() {
     try {
         const session = await getServerSession(authOptions);

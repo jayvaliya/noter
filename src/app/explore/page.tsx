@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { NoteCard } from '@/components/note-card';
 import { BsExclamationCircle } from 'react-icons/bs';
 import { IoMdGlobe } from 'react-icons/io';
+import Loading from '@/components/loading';
 
 // Updated Author interface
 interface Author {
@@ -87,11 +88,7 @@ export default function ExplorePage() {
 
     // Show loading state
     if (isLoading) {
-        return (
-            <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
-            </div>
-        );
+        return <Loading fullScreen size="large" />;
     }
 
     return (

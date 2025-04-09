@@ -8,6 +8,7 @@ import { FeaturesSection } from '@/components/features-section';
 import { Footer } from '@/components/footer';
 import { HowItWorks } from '@/components/how-it-works';
 import { RecentPublicNotes } from '@/components/recent-public-notes';
+import Loading from '@/components/loading';
 
 export default function Home() {
   const { status } = useSession();
@@ -23,9 +24,7 @@ export default function Home() {
   // Show loading state while checking authentication
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-zinc-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
-      </div>
+      <Loading size="large" fullScreen={true} />
     );
   }
 

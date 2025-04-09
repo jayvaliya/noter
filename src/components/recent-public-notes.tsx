@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BsGlobe, BsArrowRight } from 'react-icons/bs';
 import { NoteCard } from '@/components/note-card';
 import { Note, RecentPublicNotesProps } from '@/types';
+import Loading from './loading';
 
 export function RecentPublicNotes({
     limit = 3,
@@ -72,7 +73,7 @@ export function RecentPublicNotes({
 
                 {isLoading ? (
                     <div className="flex justify-center py-12">
-                        <div className="animate-spin rounded-full h-10 w-10 border-2 border-emerald-500 border-t-transparent"></div>
+                        <Loading size="medium" fullScreen={true} />
                     </div>
                 ) : error ? (
                     <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-center">

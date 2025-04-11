@@ -3,7 +3,7 @@ import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 
 // Add public paths that don't require authentication
-const publicPaths = ['/', '/signin', '/signup', '/api/auth', '/explore', '/api/public-notes', '/profile', '/api/users', '/api/users/[id]'];
+const publicPaths = ['/', '/signin', '/signup', '/api/auth', '/explore', '/api/public-notes', '/profile', '/api/users', '/api/users/[id]', '/api/folders', '/api/folders/[id]', '/api/notes/[id]', '/api/bookmarks/[noteId]', '/api/public/folders', '/api/public/notes', '/folders/[id]', '/notes/[id]', '/bookmarks/[noteId]', '/notes/folders/[id]', '/notes/folders'];
 
 export async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;

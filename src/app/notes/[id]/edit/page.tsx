@@ -212,7 +212,7 @@ export default function EditNote({ params }: { params: { id: string } }) {
                         </span>
                     </label>
                     <span className="ml-2 text-xs text-zinc-500">
-                        {isPublic ? 'Anyone can view this note' : 'Only you can view this note'}
+                        {isPublic ? 'Anyone can learn from this note' : 'Only you can view this note'}
                     </span>
                 </div>
 

@@ -8,18 +8,6 @@ import Link from 'next/link';
 import { TipTapEditor } from '@/components/tiptap-editor';
 import Loading from '@/components/loading';
 
-// Define API request type
-interface CreateNoteRequest {
-    title: string;
-    content: string;
-    isPublic: boolean;
-}
-
-// Define API error response type
-interface ApiErrorResponse {
-    message: string;
-}
-
 export default function NewNote() {
     const { status } = useSession();
     const router = useRouter();
@@ -52,30 +40,35 @@ export default function NewNote() {
         setError('');
 
         try {
-            // Create request payload with proper type
-            const requestData: CreateNoteRequest = {
-                title,
-                content,
-                isPublic,
-            };
+            // Get folderId from URL if present
+            const searchParams = new URLSearchParams(window.location.search);
+            const folderId = searchParams.get('folderId');
 
             const response = await fetch('/api/notes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestData),
+                body: JSON.stringify({
+                    title,
+                    content,
+                    isPublic,
+                    folderId: folderId || null
+                }),
             });
 
             if (!response.ok) {
-                const errorData = await response.json() as ApiErrorResponse;
-                throw new Error(errorData.message || 'Failed to save note');
+                const data = await response.json();
+                throw new Error(data.message || 'Failed to save note');
             }
 
-            // Navigate to the dashboard
-            router.push('/notes');
+            // Redirect either to the folder or to the notes page
+            if (folderId) {
+                router.push(`/notes/folders/${folderId}`);
+            } else {
+                router.push('/notes');
+            }
         } catch (err) {
-            // Proper error handling with type narrowing
             console.error('Error saving note:', err);
             setError(err instanceof Error ? err.message : 'An unexpected error occurred');
         } finally {
@@ -154,7 +147,7 @@ export default function NewNote() {
                         </span>
                     </label>
                     <span className="ml-2 text-xs text-zinc-500">
-                        {isPublic ? 'Anyone can view this note' : 'Only you can view this note'}
+                        {isPublic ? 'Anyone can learn from this note' : 'Only you can view this note'}
                     </span>
                     <span className="ml-2 text-xs text-zinc-500">
                         {"( We recommend keeping your notes public so others can benefit from them.)"}

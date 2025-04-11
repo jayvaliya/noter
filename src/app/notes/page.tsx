@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { NoteCard } from '@/components/note-card';
-import { BsPlus, BsExclamationCircle, BsBookmark } from 'react-icons/bs';
+import { FolderCard } from '@/components/folder-card';
+import { NewFolderModal } from '@/components/new-folder-modal';
+import { BsPlus, BsExclamationCircle, BsBookmark, BsFolder, BsFolderPlus } from 'react-icons/bs';
 import { ProtectedRoute } from '@/components/protected-route';
 import Loading from '@/components/loading';
 
@@ -42,83 +44,102 @@ interface Note {
     author: Author;
 }
 
-// API bookmark response
-interface ApiBookmark {
-    id: string;
-    noteId: string;
-    userId: string;
-    createdAt: string;
-    note: ApiNote;
-}
-
 // API error response type
 interface ApiError {
     message: string;
 }
 
+// Define folder type
+interface Folder {
+    id: string;
+    name: string;
+    updatedAt: Date;
+    createdAt: Date;
+    isPublic: boolean;
+    authorId: string;
+    _count: {
+        notes: number;
+        subfolders: number;
+    };
+}
+
+// Add this with your other interfaces
+interface ApiFolder {
+    id: string;
+    name: string;
+    updatedAt: string;  // API returns dates as strings
+    createdAt: string;
+    isPublic: boolean;
+    authorId: string;
+    _count: {
+        notes: number;
+        subfolders: number;
+    };
+}
+
 export default function Dashboard() {
     const [notes, setNotes] = useState<Note[]>([]);
+    const [folders, setFolders] = useState<Folder[]>([]);
     const [bookmarkedNotes, setBookmarkedNotes] = useState<Note[]>([]);
     const { data: session, status } = useSession();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
 
+    // Replace both existing useEffects with this single one
     useEffect(() => {
         // Check authentication status
         if (status === "unauthenticated") {
-            router.push('/');
+            router.push('/signin');
             return;
         }
 
         if (status === "authenticated") {
-            // Fetch notes and bookmarks
             const fetchData = async () => {
                 setIsLoading(true);
+                setError(null);
+
                 try {
-                    // Fetch all notes
-                    const notesResponse = await fetch('/api/notes');
-
-                    if (!notesResponse.ok) {
-                        const data = await notesResponse.json() as ApiError;
-                        throw new Error(data.message || 'Failed to fetch notes');
+                    // 1. Fetch root folders
+                    const foldersResponse = await fetch('/api/folders');
+                    if (!foldersResponse.ok) {
+                        throw new Error('Failed to load folders');
                     }
-
-                    const notesData = await notesResponse.json() as ApiNote[];
-
-                    // Convert date strings to Date objects
-                    const notesWithDates: Note[] = notesData.map((note: ApiNote) => ({
-                        ...note,
-                        createdAt: new Date(note.createdAt),
-                        updatedAt: new Date(note.updatedAt),
+                    const foldersData = await foldersResponse.json() as ApiFolder[];
+                    const processedFolders = foldersData.map((folder: ApiFolder) => ({
+                        ...folder,
+                        updatedAt: new Date(folder.updatedAt),
+                        createdAt: new Date(folder.createdAt)
                     }));
+                    setFolders(processedFolders);
 
-                    setNotes(notesWithDates);
-
-                    // Fetch bookmarked notes
-                    const bookmarksResponse = await fetch('/api/bookmarks');
-
-                    if (!bookmarksResponse.ok) {
-                        const data = await bookmarksResponse.json() as ApiError;
-                        throw new Error(data.message || 'Failed to fetch bookmarks');
+                    // 2. Fetch ALL notes (not just root notes)
+                    const notesResponse = await fetch('/api/notes');
+                    if (!notesResponse.ok) {
+                        throw new Error('Failed to load notes');
                     }
+                    const notesData = await notesResponse.json() as ApiNote[];
+                    const processedNotes = notesData.map((note: ApiNote) => ({
+                        ...note,
+                        updatedAt: new Date(note.updatedAt),
+                        createdAt: new Date(note.createdAt)
+                    }));
+                    setNotes(processedNotes);
 
-                    // Add these logs right after fetching the bookmark data
-                    const bookmarksData = await bookmarksResponse.json() as ApiBookmark[];
-
-                    // Extract notes from bookmarks and convert dates with proper error handling
-                    const bookmarkedNotesWithDates: Note[] = bookmarksData
-                        .filter((bookmark: ApiBookmark) => bookmark && bookmark.note) // Filter out any invalid bookmarks
-                        .map((bookmark: ApiBookmark) => ({
-                            ...bookmark.note,
-                            createdAt: new Date(bookmark.note.createdAt),
-                            updatedAt: new Date(bookmark.note.updatedAt),
-                            isBookmarked: true, // Explicitly set bookmark status
+                    // 3. Fetch bookmarks
+                    const bookmarksResponse = await fetch('/api/bookmarks');
+                    if (bookmarksResponse.ok) {
+                        const bookmarksData = await bookmarksResponse.json() as ApiNote[];
+                        const processedBookmarks = bookmarksData.map((note: ApiNote) => ({
+                            ...note,
+                            updatedAt: new Date(note.updatedAt),
+                            createdAt: new Date(note.createdAt)
                         }));
-
-                    setBookmarkedNotes(bookmarkedNotesWithDates);
+                        setBookmarkedNotes(processedBookmarks);
+                    }
                 } catch (err) {
-                    console.error('Error fetching data:', err);
+                    console.error('Error loading data:', err);
                     setError(err instanceof Error ? err.message : 'An unexpected error occurred');
                 } finally {
                     setIsLoading(false);
@@ -129,6 +150,90 @@ export default function Dashboard() {
         }
     }, [status, router]);
 
+    const handleCreateFolder = async (name: string, isPublic: boolean) => {
+        try {
+            const response = await fetch('/api/folders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name,
+                    isPublic,
+                    parentId: null // Creating at root level
+                })
+            });
+
+            if (!response.ok) {
+                const data = await response.json() as ApiError;
+                throw new Error(data.message || 'Failed to create folder');
+            }
+
+            // Refresh folders list after creation
+            const foldersResponse = await fetch('/api/folders');
+            const foldersData = await foldersResponse.json() as ApiFolder[];
+
+            const processedFolders = foldersData.map((folder: ApiFolder) => ({
+                ...folder,
+                updatedAt: new Date(folder.updatedAt),
+                createdAt: new Date(folder.createdAt)
+            }));
+
+            setFolders(processedFolders);
+        } catch (err) {
+            console.error('Error creating folder:', err);
+            throw err;
+        }
+    };
+
+    const handleEditFolder = (folderId: string) => {
+        // Navigate to edit page or show edit modal
+        // This is a placeholder - implement as needed
+        console.log('Edit folder:', folderId);
+    };
+
+    const handleDeleteFolder = async (folderId: string) => {
+        if (confirm('Are you sure you want to delete this folder? All contents will be moved to the root level.')) {
+            try {
+                const response = await fetch(`/api/folders/${folderId}?keepContents=true`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const data = await response.json() as ApiError;
+                    throw new Error(data.message || 'Failed to delete folder');
+                }
+
+                // Refresh folders list
+                const foldersResponse = await fetch('/api/folders');
+                const foldersData = await foldersResponse.json() as ApiFolder[];
+
+                const processedFolders = foldersData.map((folder: ApiFolder) => ({
+                    ...folder,
+                    updatedAt: new Date(folder.updatedAt),
+                    createdAt: new Date(folder.createdAt)
+                }));
+
+                setFolders(processedFolders);
+
+                // Also refresh notes since contents are moved to root
+                const notesResponse = await fetch('/api/notes?folderId=null');
+                const notesData = await notesResponse.json() as ApiNote[];
+
+                const processedNotes = notesData.map((note: ApiNote) => ({
+                    ...note,
+                    updatedAt: new Date(note.updatedAt),
+                    createdAt: new Date(note.createdAt)
+                }));
+
+                setNotes(processedNotes);
+            } catch (err) {
+                console.error('Error deleting folder:', err);
+                alert(err instanceof Error ? err.message : 'Failed to delete folder');
+            }
+        }
+    };
+
     // Show loading state while checking authentication or fetching data
     if (status === "loading" || isLoading) {
         return <Loading fullScreen size="large" />;
@@ -138,19 +243,28 @@ export default function Dashboard() {
         <ProtectedRoute>
             <div className="min-h-screen bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
-                    <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
-                        <h1 className="text-3xl font-bold text-white">
-                            Your Notes
-                        </h1>
-
-                        <Link
-                            href="/notes/new"
-                            className="mt-4 md:mt-0 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-                        >
-                            <BsPlus size={20} />
-                            New Note
-                        </Link>
-                    </div>
+                    <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-white">My Notes</h1>
+                            <p className="mt-1 text-zinc-400">Manage your personal notes and folders</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsFolderModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg shadow-md transition-colors"
+                            >
+                                <BsFolderPlus />
+                                New Folder
+                            </button>
+                            <Link
+                                href="/notes/new"
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md transition-colors"
+                            >
+                                <BsPlus />
+                                New Note
+                            </Link>
+                        </div>
+                    </header>
 
                     {error && (
                         <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 flex items-center">
@@ -159,22 +273,27 @@ export default function Dashboard() {
                         </div>
                     )}
 
-                    {/* Bookmarked notes section */}
-                    {bookmarkedNotes.length > 0 && (
+
+                    {/* Folders section */}
+                    {folders.length > 0 && (
                         <div className="mb-10">
                             <div className="flex items-center mb-4">
-                                <BsBookmark className="text-emerald-500 mr-2" />
-                                <h2 className="text-xl font-semibold text-white">Bookmarked Notes</h2>
+                                <BsFolder className="text-yellow-500 mr-2" />
+                                <h2 className="text-xl font-semibold text-white">Folders</h2>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {bookmarkedNotes.map(note => (
-                                    <NoteCard
-                                        key={note.id}
-                                        id={note.id}
-                                        title={note.title}
-                                        updatedAt={note.updatedAt}
-                                        isBookmarked={note.isBookmarked}
-                                        isOwner={note.authorId === session?.user?.id}
+                                {folders.map(folder => (
+                                    <FolderCard
+                                        key={folder.id}
+                                        id={folder.id}
+                                        name={folder.name}
+                                        updatedAt={folder.updatedAt}
+                                        isPublic={folder.isPublic}
+                                        isOwner={folder.authorId === session?.user?.id}
+                                        noteCount={folder._count.notes}
+                                        subfolderCount={folder._count.subfolders}
+                                        onEdit={handleEditFolder}
+                                        onDelete={handleDeleteFolder}
                                     />
                                 ))}
                             </div>
@@ -214,8 +333,36 @@ export default function Dashboard() {
                             </div>
                         )}
                     </div>
+                    {/* Bookmarked notes section */}
+                    {bookmarkedNotes.length > 0 && (
+                        <div className="my-10">
+                            <div className="flex items-center mb-4">
+                                <BsBookmark className="text-emerald-500 mr-2" />
+                                <h2 className="text-xl font-semibold text-white">Bookmarks</h2>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {bookmarkedNotes.map(note => (
+                                    <NoteCard
+                                        key={note.id}
+                                        id={note.id}
+                                        title={note.title}
+                                        updatedAt={note.updatedAt}
+                                        isBookmarked={note.isBookmarked}
+                                        isOwner={note.authorId === session?.user?.id}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* New Folder Modal */}
+            <NewFolderModal
+                isOpen={isFolderModalOpen}
+                onClose={() => setIsFolderModalOpen(false)}
+                onSubmit={handleCreateFolder}
+            />
         </ProtectedRoute>
     );
 }

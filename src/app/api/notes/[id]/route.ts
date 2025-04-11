@@ -136,6 +136,7 @@ export async function DELETE(
 }
 
 // Update to handle privacy setting changes and content updates
+// Update PATCH to support moving notes between folders
 export async function PATCH(
     req: NextRequest,
     context: { params: { id: string } }
@@ -153,7 +154,24 @@ export async function PATCH(
         }
 
         const userId = session.user.id;
-        const { title, content, isPublic } = await req.json();
+        const { title, content, isPublic, folderId } = await req.json();
+
+        // If folderId is provided, verify it's valid and user has access
+        if (folderId !== undefined && folderId !== null) {
+            const folder = await prisma.folder.findUnique({
+                where: {
+                    id: folderId,
+                    authorId: userId
+                }
+            });
+
+            if (!folder) {
+                return NextResponse.json(
+                    { message: 'Folder not found or you do not have permission' },
+                    { status: 404 }
+                );
+            }
+        }
 
         // Check if the note exists and belongs to the user
         const note = await prisma.note.findUnique({
@@ -175,13 +193,14 @@ export async function PATCH(
             );
         }
 
-        // Update the note with only the provided fields
+        // Update the note with folder support
         const updatedNote = await prisma.note.update({
             where: { id: noteId },
             data: {
                 ...(title !== undefined && { title }),
                 ...(content !== undefined && { content }),
                 ...(isPublic !== undefined && { isPublic }),
+                ...(folderId !== undefined && { folderId: folderId || null })
             },
             select: {
                 id: true,

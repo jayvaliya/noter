@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
         const userId = session.user.id;
 
         // Parse request body
-        const { title, content, isPublic = true } = await req.json();
+        const { title, content, isPublic = true, folderId = null } = await req.json();
 
         // Validate inputs
         if (!title || !content) {
@@ -30,6 +30,23 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // If folderId is provided, verify it's valid and user has access
+        if (folderId) {
+            const folder = await prisma.folder.findUnique({
+                where: {
+                    id: folderId,
+                    authorId: userId
+                }
+            });
+
+            if (!folder) {
+                return NextResponse.json(
+                    { message: 'Folder not found or you do not have permission' },
+                    { status: 404 }
+                );
+            }
+        }
+
         // Create the note in the database
         const note = await prisma.note.create({
             data: {
@@ -37,6 +54,7 @@ export async function POST(req: NextRequest) {
                 content,
                 isPublic,
                 authorId: userId,
+                folderId: folderId || null
             },
             // Only select fields we need to return
             select: {
@@ -60,12 +78,15 @@ export async function POST(req: NextRequest) {
 }
 
 // Fetch all notes for the authenticated user.
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
 
         // Get the user ID if authenticated
         const userId = session?.user?.id;
+
+        // Add this parameter to filter by folder
+        const folderId = req.nextUrl.searchParams.get('folderId') || null;
 
         // If user is authenticated, return their notes
         if (userId) {
@@ -73,6 +94,8 @@ export async function GET() {
             const notes = await prisma.note.findMany({
                 where: {
                     authorId: userId,
+                    // Add this condition to filter by folder
+                    folderId: folderId || null
                 },
                 select: {
                     id: true,
@@ -81,6 +104,7 @@ export async function GET() {
                     createdAt: true,
                     isPublic: true,
                     authorId: true,
+                    folderId: true, // Add this to include folder ID
                     bookmarks: {
                         where: {
                             userId: userId,

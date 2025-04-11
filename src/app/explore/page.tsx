@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { NoteCard } from '@/components/note-card';
+import { FolderCard } from '@/components/folder-card';
 import { BsExclamationCircle } from 'react-icons/bs';
 import Loading from '@/components/loading';
 
@@ -40,6 +41,34 @@ interface Note {
     isBookmarked?: boolean;
 }
 
+// Interface for API response folders (with string dates)
+interface ApiFolder {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+    isPublic: boolean;
+    authorId: string;
+    _count: {
+        notes: number;
+        subfolders: number;
+    };
+}
+
+// Interface for processed folders (with Date objects)
+interface Folder {
+    id: string;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+    isPublic: boolean;
+    authorId: string;
+    _count: {
+        notes: number;
+        subfolders: number;
+    };
+}
+
 // API error response type
 interface ApiError {
     message: string;
@@ -47,42 +76,62 @@ interface ApiError {
 
 export default function ExplorePage() {
     const [publicNotes, setPublicNotes] = useState<Note[]>([]);
+    const [folders, setFolders] = useState<Folder[]>([]);
     const { data: session, status } = useSession();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Fetch public notes
-        const fetchPublicNotes = async () => {
-            setIsLoading(true);
+        const fetchPublicContent = async () => {
             try {
-                // Use the public notes API
-                const response = await fetch('/api/public-notes');
+                setIsLoading(true);
+                setError(null);
 
-                if (!response.ok) {
-                    const errorData = await response.json() as ApiError;
+                // Use the dedicated public folders endpoint
+                const foldersResponse = await fetch('/api/public/folders');
+
+                if (!foldersResponse.ok) {
+                    throw new Error('Failed to fetch public folders');
+                }
+
+                const foldersData = await foldersResponse.json();
+
+                // Process folder dates
+                const processedFolders = foldersData.map((folder: ApiFolder) => ({
+                    ...folder,
+                    updatedAt: new Date(folder.updatedAt),
+                    createdAt: new Date(folder.createdAt)
+                }));
+
+                setFolders(processedFolders);
+
+                // Use the dedicated public notes endpoint 
+                const notesResponse = await fetch('/api/public-notes');
+
+                if (!notesResponse.ok) {
+                    const errorData = await notesResponse.json() as ApiError;
                     throw new Error(errorData.message || 'Failed to fetch public notes');
                 }
 
-                const notesData = await response.json() as ApiNote[];
+                const notesData = await notesResponse.json() as ApiNote[];
 
-                // Convert date strings to Date objects
-                const notesWithDates: Note[] = notesData.map((note: ApiNote) => ({
+                // Process notes with dates
+                const processedNotes = notesData.map((note: ApiNote) => ({
                     ...note,
-                    createdAt: new Date(note.createdAt),
                     updatedAt: new Date(note.updatedAt),
+                    createdAt: new Date(note.createdAt)
                 }));
 
-                setPublicNotes(notesWithDates);
+                setPublicNotes(processedNotes);
             } catch (err) {
-                console.error('Error fetching public notes:', err);
+                console.error('Error fetching public content:', err);
                 setError(err instanceof Error ? err.message : 'An unexpected error occurred');
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchPublicNotes();
+        fetchPublicContent();
     }, []);
 
     // Show loading state
@@ -100,6 +149,29 @@ export default function ExplorePage() {
                     </div>
                 )}
 
+                {folders.length > 0 && (
+                    <div className="mb-10">
+                        <h2 className="text-2xl font-bold text-white mb-6">Public Folders</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {folders.map(folder => (
+                                <FolderCard
+                                    key={folder.id}
+                                    id={folder.id}
+                                    name={folder.name}
+                                    updatedAt={folder.updatedAt}
+                                    isPublic={folder.isPublic}
+                                    isOwner={folder.authorId === session?.user?.id}
+                                    noteCount={folder._count.notes}
+                                    subfolderCount={folder._count.subfolders}
+                                    onEdit={() => { }}  // Not needed in explore view
+                                    onDelete={() => { }}  // Not needed in explore view
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+                <h2 className="text-2xl font-bold text-white mb-6">Public Notes</h2>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {publicNotes.length > 0 ? (
                         publicNotes.map(note => (
@@ -107,12 +179,8 @@ export default function ExplorePage() {
                                 key={note.id}
                                 id={note.id}
                                 title={note.title}
-                                content={note.content}
-                                createdAt={note.createdAt}
                                 updatedAt={note.updatedAt}
-                                author={note.author}
                                 isBookmarked={note.isBookmarked}
-                                isPublic={note.isPublic}
                                 isOwner={note.authorId === session?.user?.id}
                             />
                         ))

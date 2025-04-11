@@ -32,7 +32,7 @@ export function Navbar() {
         },
         {
             path: "/notes",
-            label: "My Notes",
+            label: "Dashboard",
             icon: BsCollection,
             requiresAuth: true
         },

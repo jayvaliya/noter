@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "build-local": "next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
@@ -12,6 +13,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",
+    "@headlessui/react": "^2.2.1",
     "@lottiefiles/dotlottie-react": "^0.13.3",
     "@prisma/client": "^6.5.0",
     "@tiptap/extension-highlight": "^2.11.7",

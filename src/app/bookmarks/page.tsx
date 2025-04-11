@@ -130,12 +130,8 @@ export default function BookmarksPage() {
                                     key={note.id}
                                     id={note.id}
                                     title={note.title}
-                                    content={note.content}
-                                    createdAt={note.createdAt}
                                     updatedAt={note.updatedAt}
-                                    author={note.author}
                                     isBookmarked={true}
-                                    isPublic={note.isPublic}
                                     isOwner={note.authorId === session?.user?.id}
                                 />
                             ))

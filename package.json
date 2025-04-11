@@ -21,6 +21,8 @@
     "@tiptap/extension-typography": "^2.11.7",
     "@tiptap/react": "^2.11.7",
     "@tiptap/starter-kit": "^2.11.7",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "bcrypt": "^5.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.6.3",

@@ -8,7 +8,7 @@ export async function GET() {
         // Check authentication
         const session = await getServerSession(authOptions);
 
-        if (!session || !session.user) {
+        if (!session?.user?.id) {
             return NextResponse.json(
                 { message: 'You must be logged in to view bookmarks' },
                 { status: 401 }
@@ -17,21 +17,20 @@ export async function GET() {
 
         const userId = session.user.id;
 
-        // Get user's bookmarked notes with author information
+        // Get user's bookmarked notes with only necessary fields
         const bookmarks = await prisma.bookmark.findMany({
             where: {
                 userId: userId,
             },
-            include: {
+            select: {
                 note: {
-                    include: {
-                        author: {
-                            select: {
-                                id: true,
-                                name: true,
-                                image: true,
-                            }
-                        }
+                    select: {
+                        id: true,
+                        title: true,
+                        updatedAt: true,
+                        createdAt: true,
+                        isPublic: true,
+                        authorId: true
                     }
                 },
             },
@@ -40,13 +39,11 @@ export async function GET() {
             },
         });
 
-        // Extract the notes from bookmarks and include bookmark status
-        const bookmarkedNotes = bookmarks.map(bookmark => {
-            return {
-                ...bookmark.note,
-                isBookmarked: true,
-            };
-        });
+        // Transform to a simpler format with bookmark flag
+        const bookmarkedNotes = bookmarks.map(bookmark => ({
+            ...bookmark.note,
+            isBookmarked: true
+        }));
 
         return NextResponse.json(bookmarkedNotes);
     } catch (error) {

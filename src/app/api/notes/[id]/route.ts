@@ -14,12 +14,19 @@ export async function GET(
         const session = await getServerSession(authOptions);
         const userId = session?.user?.id;
 
-        // Fetch the note with author information
+        // Fetch the note with minimum required fields
         const note = await prisma.note.findUnique({
             where: {
                 id: noteId,
             },
-            include: {
+            select: {
+                id: true,
+                title: true,
+                content: true,  // Content needed for viewing the note
+                createdAt: true,
+                updatedAt: true,
+                isPublic: true,
+                authorId: true,
                 author: {
                     select: {
                         id: true,
@@ -27,15 +34,13 @@ export async function GET(
                         image: true,
                     },
                 },
-                // Include bookmarks if user is authenticated
-                ...(userId
-                    ? {
-                        bookmarks: {
-                            where: { userId },
-                            select: { id: true },
-                        },
-                    }
-                    : {}),
+                // Only include bookmark data if user is authenticated
+                ...(userId ? {
+                    bookmarks: {
+                        where: { userId },
+                        select: { id: true },
+                    },
+                } : {}),
             },
         });
 
@@ -54,10 +59,10 @@ export async function GET(
             );
         }
 
-        // Transform for response
+        // Add isBookmarked flag and remove the bookmarks array
         const noteResponse = {
             ...note,
-            isBookmarked: userId ? note.bookmarks?.length > 0 : false,
+            isBookmarked: userId && 'bookmarks' in note ? note.bookmarks.length > 0 : false,
             bookmarks: undefined,
         };
 
@@ -133,12 +138,14 @@ export async function DELETE(
 // Update to handle privacy setting changes and content updates
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: { id: string } }
 ) {
     try {
+        const resolvedParams = await context.params;
+        const noteId = resolvedParams.id;
         const session = await getServerSession(authOptions);
 
-        if (!session || !session.user) {
+        if (!session?.user?.id) {
             return NextResponse.json(
                 { message: 'You must be logged in to update notes' },
                 { status: 401 }
@@ -146,14 +153,12 @@ export async function PATCH(
         }
 
         const userId = session.user.id;
-        const noteId = params.id;
         const { title, content, isPublic } = await req.json();
 
         // Check if the note exists and belongs to the user
         const note = await prisma.note.findUnique({
-            where: {
-                id: noteId,
-            },
+            where: { id: noteId },
+            select: { authorId: true }  // Only select what we need for verification
         });
 
         if (!note) {
@@ -170,16 +175,22 @@ export async function PATCH(
             );
         }
 
-        // Update the note
+        // Update the note with only the provided fields
         const updatedNote = await prisma.note.update({
-            where: {
-                id: noteId,
-            },
+            where: { id: noteId },
             data: {
                 ...(title !== undefined && { title }),
                 ...(content !== undefined && { content }),
                 ...(isPublic !== undefined && { isPublic }),
             },
+            select: {
+                id: true,
+                title: true,
+                updatedAt: true,
+                createdAt: true,
+                isPublic: true,
+                authorId: true
+            }
         });
 
         return NextResponse.json(updatedNote);

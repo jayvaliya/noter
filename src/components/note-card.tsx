@@ -1,7 +1,6 @@
 import { FC, useState } from 'react';
-import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { BsThreeDotsVertical, BsBookmark, BsBookmarkFill, BsPersonFill, BsPencil } from 'react-icons/bs';
+import { BsThreeDotsVertical, BsBookmark, BsBookmarkFill, BsPencil, BsFileText } from 'react-icons/bs';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { NoteCardProps } from '@/types';
@@ -10,9 +9,7 @@ import Loading from './loading';
 export const NoteCard: FC<NoteCardProps> = ({
     id,
     title,
-    content,
     updatedAt,
-    author,
     isBookmarked = false,
     isOwner = false
 }) => {
@@ -21,16 +18,6 @@ export const NoteCard: FC<NoteCardProps> = ({
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isBookmarkState, setIsBookmarkState] = useState(isBookmarked);
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
-
-    // Extract the first few words for a plain text preview
-    const plainTextPreview = content
-        ? content
-            .replace(/<[^>]*>/g, ' ') // Remove HTML tags
-            .replace(/&nbsp;/g, ' ')  // Replace &nbsp; with spaces
-            .replace(/\s+/g, ' ')     // Replace multiple spaces with a single space
-            .trim()                   // Trim whitespace
-            .slice(0, 120) + (content.length > 120 ? '...' : '')
-        : '';
 
     // Format the date - ensure updatedAt is a valid date
     const timeAgo = updatedAt
@@ -86,22 +73,6 @@ export const NoteCard: FC<NoteCardProps> = ({
         }
     };
 
-    // Function to safely handle profile link clicks
-    const handleProfileClick = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsMenuOpen(false);
-
-        // Ensure author and author.id exist before navigating
-        if (author && typeof author === 'object' && 'id' in author && author.id) {
-            const authorId = String(author.id).trim();
-            if (authorId) {
-                // Use string concatenation instead of template literals for added safety
-                router.push('/profile/' + authorId);
-            }
-        }
-    };
-
     // Safely navigate to note detail
     const handleNoteClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -119,9 +90,8 @@ export const NoteCard: FC<NoteCardProps> = ({
 
     return (
         <div className="relative group">
-            {/* Replace Link with a div and custom handler */}
             <div onClick={handleNoteClick} className="block cursor-pointer">
-                <div className="bg-zinc-800/30 backdrop-blur-sm rounded-lg border border-zinc-700 overflow-hidden hover:border-zinc-600 transition-all h-full">
+                <div className="bg-zinc-900 backdrop-blur-sm rounded-lg border border-zinc-700 overflow-hidden hover:border-emerald-500 transition-all h-full">
                     <div className="p-4">
                         {/* Three-dot menu button */}
                         <div className="absolute top-2 right-2">
@@ -134,33 +104,18 @@ export const NoteCard: FC<NoteCardProps> = ({
                             </button>
                         </div>
 
-                        <h3 className="text-lg font-medium text-white truncate mb-2 mt-3 pr-6">{title}</h3>
-                        <p className="text-zinc-400 text-sm mb-3 line-clamp-3">
-                            {plainTextPreview}
-                        </p>
-
-                        {author && (
-                            <div className="flex items-center mt-4">
-                                <div className="flex-shrink-0 h-6 w-6 rounded-full overflow-hidden bg-zinc-700 mr-2">
-                                    {author.image ? (
-                                        <Image
-                                            src={author.image}
-                                            alt={author.name || "Author"}
-                                            width={24}
-                                            height={24}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="h-full w-full flex items-center justify-center">
-                                            <BsPersonFill className="text-zinc-500" size={14} />
-                                        </div>
-                                    )}
-                                </div>
-                                <span className="text-xs text-zinc-500 truncate">
-                                    {author.name || "Anonymous"} • {timeAgo}
-                                </span>
+                        {/* Note icon */}
+                        <div className="flex items-center mb-3">
+                            <div className="mr-3 p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                                <BsFileText size={18} />
                             </div>
-                        )}
+                            <h3 className="text-lg font-medium text-white truncate pr-6">{title}</h3>
+                        </div>
+
+                        {/* Timestamp only */}
+                        <div className="mt-4 text-xs text-zinc-500">
+                            {timeAgo}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -169,13 +124,6 @@ export const NoteCard: FC<NoteCardProps> = ({
             {isMenuOpen && (
                 <div className="absolute top-10 right-2 w-48 bg-zinc-800 shadow-lg rounded-md border border-zinc-700 z-10">
                     <div className="py-1">
-                        <button
-                            onClick={handleProfileClick}
-                            className="flex items-center w-full px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 transition-colors"
-                        >
-                            <BsPersonFill className="mr-2" />
-                            View Profile
-                        </button>
                         <button
                             onClick={handleBookmarkClick}
                             disabled={isBookmarkLoading}

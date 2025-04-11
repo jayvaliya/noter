@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiUser, FiMenu, FiX, FiSettings } from "react-icons/fi";
 import { BsGlobe, BsLightning, BsCollection, BsBookmarks } from "react-icons/bs";
 import { RouteItem } from "@/types";
+import { MdOutlineEdit } from "react-icons/md";
 
 export function Navbar() {
     const { data: session, status } = useSession();
@@ -39,6 +40,12 @@ export function Navbar() {
             path: "/bookmarks",
             label: "Bookmarks",
             icon: BsBookmarks,
+            requiresAuth: true
+        },
+        {
+            path: "/notes/new",
+            label: "Write",
+            icon: MdOutlineEdit,
             requiresAuth: true
         }
     ];

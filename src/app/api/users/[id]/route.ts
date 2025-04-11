@@ -10,36 +10,37 @@ export async function GET(
     try {
         const userId = context.params.id;
         const session = await getServerSession(authOptions);
+        const isOwnProfile = session?.user?.id === userId;
 
-        // Find the user
+        // Find the user with optimized query
         const user = await prisma.user.findUnique({
-            where: {
-                id: userId,
-            },
+            where: { id: userId },
             select: {
                 id: true,
                 name: true,
                 image: true,
                 // Only include email if the user is viewing their own profile
-                email: session?.user?.id === userId ? true : false,
-                // Count their public notes
+                ...(isOwnProfile ? { email: true } : {}),
+                // Count public notes
                 _count: {
                     select: {
                         notes: {
-                            where: {
-                                isPublic: true,
-                            },
+                            where: { isPublic: true },
                         },
                     },
                 },
-                // Include their public notes
+                // Include only the needed fields from public notes
                 notes: {
-                    where: {
+                    where: { isPublic: true },
+                    select: {
+                        id: true,
+                        title: true,
+                        updatedAt: true,
+                        createdAt: true,
                         isPublic: true,
+                        authorId: true
                     },
-                    orderBy: {
-                        updatedAt: 'desc',
-                    },
+                    orderBy: { updatedAt: 'desc' },
                     take: 5, // Limit to 5 most recent notes
                 },
             },

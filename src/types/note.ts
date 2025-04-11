@@ -15,12 +15,8 @@ export interface Note {
 export interface NoteCardProps {
     id: string;
     title: string;
-    content: string;
-    createdAt: Date;
     updatedAt: Date;
-    author?: User;
     isBookmarked?: boolean;
-    isPublic?: boolean;
     isOwner?: boolean;
 }
 

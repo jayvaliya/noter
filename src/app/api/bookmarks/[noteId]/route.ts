@@ -22,9 +22,10 @@ export async function POST(
 
         const userId = session.user.id;
 
-        // Check if the note exists
+        // Check if the note exists with minimal fields
         const note = await prisma.note.findUnique({
-            where: { id: noteId }
+            where: { id: noteId },
+            select: { id: true }
         });
 
         if (!note) {
@@ -41,7 +42,8 @@ export async function POST(
                     userId,
                     noteId,
                 }
-            }
+            },
+            select: { id: true }
         });
 
         let isBookmarked = false;

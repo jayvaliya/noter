@@ -91,7 +91,7 @@ export default function NewNote() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-5xl mx-auto">
                 {/* Header with back button */}
                 <div className="mb-8 flex items-center justify-between">

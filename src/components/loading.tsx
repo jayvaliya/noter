@@ -6,7 +6,7 @@ interface LoadingProps {
     fullScreen?: boolean;
 }
 
-const Loading = ({ size = 'medium', color = 'emerald-500', fullScreen = false }: LoadingProps) => {
+const Loading = ({ size = 'medium', fullScreen = false }: LoadingProps) => {
     // Map sizes to dimensions
     const dimensions = {
         small: 'h-4 w-4',
@@ -15,12 +15,12 @@ const Loading = ({ size = 'medium', color = 'emerald-500', fullScreen = false }:
     };
 
     // Use spinner fallback - more reliable than Lottie which requires external files
-    const spinnerClass = `animate-spin rounded-full ${dimensions[size]} border-2 border-t-transparent border-${color}`;
+    const spinnerClass = `animate-spin rounded-full ${dimensions[size]} border-2 border-t-transparent border-emerald-500`;
 
     // Decide if this should be centered on screen
     if (fullScreen) {
         return (
-            <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
+            <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
                 <div className={spinnerClass}></div>
             </div>
         );

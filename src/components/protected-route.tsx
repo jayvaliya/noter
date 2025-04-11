@@ -18,7 +18,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     if (status === "loading") {
         return (
-            <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
+            <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
                 <Loading size="large" fullScreen={true} />
             </div>
         );

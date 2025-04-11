@@ -149,7 +149,7 @@ export default function ProfilePage() {
 
     if (error || !profile) {
         return (
-            <div className="min-h-screen bg-zinc-900 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto">
                     <div className="mb-8 flex items-center">
                         <Link
@@ -170,7 +170,7 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-5xl mx-auto">
                 {/* Back button and navigation */}
                 <div className="mb-8 flex items-center">

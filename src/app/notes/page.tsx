@@ -136,7 +136,7 @@ export default function Dashboard() {
 
     return (
         <ProtectedRoute>
-            <div className="min-h-screen bg-zinc-900 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
                         <h1 className="text-3xl font-bold text-white">
@@ -172,12 +172,8 @@ export default function Dashboard() {
                                         key={note.id}
                                         id={note.id}
                                         title={note.title}
-                                        content={note.content}
-                                        createdAt={note.createdAt}
                                         updatedAt={note.updatedAt}
-                                        author={note.author}  // Pass the author object
                                         isBookmarked={note.isBookmarked}
-                                        isPublic={note.isPublic}
                                         isOwner={note.authorId === session?.user?.id}
                                     />
                                 ))}
@@ -195,12 +191,8 @@ export default function Dashboard() {
                                         key={note.id}
                                         id={note.id}
                                         title={note.title}
-                                        content={note.content}
-                                        createdAt={note.createdAt}
                                         updatedAt={note.updatedAt}
-                                        author={note.author}
                                         isBookmarked={note.isBookmarked}
-                                        isPublic={note.isPublic}
                                         isOwner={note.authorId === session?.user?.id}
                                     />
                                 ))}

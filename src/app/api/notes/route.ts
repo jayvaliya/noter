@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
         // Check if user is authenticated
         const session = await getServerSession(authOptions);
 
-        if (!session || !session.user || !session.user.id) {
+        if (!session?.user?.id) {
             return NextResponse.json(
                 { message: 'You must be logged in to create notes' },
                 { status: 401 }
@@ -38,6 +38,15 @@ export async function POST(req: NextRequest) {
                 isPublic,
                 authorId: userId,
             },
+            // Only select fields we need to return
+            select: {
+                id: true,
+                title: true,
+                createdAt: true,
+                updatedAt: true,
+                isPublic: true,
+                authorId: true
+            }
         });
 
         return NextResponse.json(note, { status: 201 });
@@ -60,18 +69,18 @@ export async function GET() {
 
         // If user is authenticated, return their notes
         if (userId) {
+            // Directly select only the fields we need
             const notes = await prisma.note.findMany({
                 where: {
                     authorId: userId,
                 },
-                include: {
-                    author: {
-                        select: {
-                            id: true,
-                            name: true,
-                            image: true,
-                        }
-                    },
+                select: {
+                    id: true,
+                    title: true,
+                    updatedAt: true,
+                    createdAt: true,
+                    isPublic: true,
+                    authorId: true,
                     bookmarks: {
                         where: {
                             userId: userId,
@@ -82,15 +91,19 @@ export async function GET() {
                     },
                 },
                 orderBy: {
-                    updatedAt: 'desc',
+                    title: 'asc',
                 },
             });
 
-            // Transform to include isBookmarked property
+            // We still need minimal transformation for computed fields
             const notesWithBookmarkStatus = notes.map(note => ({
-                ...note,
-                isBookmarked: note.bookmarks.length > 0,
-                bookmarks: undefined,
+                id: note.id,
+                title: note.title,
+                updatedAt: note.updatedAt,
+                createdAt: note.createdAt,
+                isPublic: note.isPublic,
+                authorId: note.authorId,
+                isBookmarked: note.bookmarks.length > 0
             }));
 
             return NextResponse.json(notesWithBookmarkStatus);

@@ -12,70 +12,45 @@ export async function GET(req: NextRequest) {
         const session = await getServerSession(authOptions);
         const userId = session?.user?.id;
 
-        // Fetch all public notes - with or without authentication
-        let publicNotes;
-
-        if (userId) {
-            // For authenticated users: Include bookmark status
-            publicNotes = await prisma.note.findMany({
-                where: {
-                    isPublic: true,
-                },
-                include: {
-                    author: {
-                        select: {
-                            id: true,
-                            name: true,
-                            image: true,
-                        }
-                    },
-                    // Include user's bookmarks to check if note is bookmarked
+        // Fetch public notes with only the required fields
+        const publicNotes = await prisma.note.findMany({
+            where: {
+                isPublic: true,
+            },
+            select: {
+                id: true,
+                title: true,
+                updatedAt: true,
+                createdAt: true,
+                isPublic: true,
+                authorId: true,
+                // Only include bookmark data if user is authenticated
+                ...(userId ? {
                     bookmarks: {
                         where: { userId },
                         select: { id: true },
-                    },
-                },
-                orderBy: {
-                    updatedAt: 'desc',
-                },
-                ...(limit ? { take: limit } : {}),
-            });
+                    }
+                } : {})
+            },
+            orderBy: {
+                updatedAt: 'desc',
+            },
+            ...(limit ? { take: limit } : {}),
+        });
 
-            // Transform notes to include isBookmarked flag
-            publicNotes = publicNotes.map(note => ({
-                ...note,
-                isBookmarked: note.bookmarks.length > 0,
-                bookmarks: undefined, // Remove the bookmarks array from response
-            }));
-        } else {
-            // For unauthenticated users: Standard query without bookmarks
-            publicNotes = await prisma.note.findMany({
-                where: {
-                    isPublic: true,
-                },
-                include: {
-                    author: {
-                        select: {
-                            id: true,
-                            name: true,
-                            image: true,
-                        }
-                    },
-                },
-                orderBy: {
-                    updatedAt: 'desc',
-                },
-                ...(limit ? { take: limit } : {}),
-            });
+        // Process bookmark status
+        const processedNotes = publicNotes.map(note => ({
+            id: note.id,
+            title: note.title,
+            updatedAt: note.updatedAt,
+            createdAt: note.createdAt,
+            isPublic: note.isPublic,
+            authorId: note.authorId,
+            // Set isBookmarked based on whether user is authenticated and has bookmarked the note
+            isBookmarked: userId ? ('bookmarks' in note && note.bookmarks.length > 0) : false
+        }));
 
-            // Set isBookmarked to false for all notes
-            publicNotes = publicNotes.map(note => ({
-                ...note,
-                isBookmarked: false,
-            }));
-        }
-
-        return NextResponse.json(publicNotes);
+        return NextResponse.json(processedNotes);
     } catch (error) {
         console.error('Error fetching public notes:', error);
         return NextResponse.json(

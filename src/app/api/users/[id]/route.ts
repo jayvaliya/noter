@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 
+// Fetch a user profile by ID
 export async function GET(
     req: NextRequest,
     context: { params: { id: string } }
@@ -25,13 +26,16 @@ export async function GET(
                 _count: {
                     select: {
                         notes: {
-                            where: { isPublic: true },
+                            where: isOwnProfile ? {} : { isPublic: true },
+                        },
+                        folders: {
+                            where: isOwnProfile ? {} : { isPublic: true },
                         },
                     },
                 },
-                // Include only the needed fields from public notes
+                // Include only the needed fields from notes based on auth status
                 notes: {
-                    where: { isPublic: true },
+                    where: isOwnProfile ? {} : { isPublic: true },
                     select: {
                         id: true,
                         title: true,
@@ -43,6 +47,29 @@ export async function GET(
                     orderBy: { updatedAt: 'desc' },
                     take: 5, // Limit to 5 most recent notes
                 },
+                // Include folders based on auth status
+                folders: {
+                    where: {
+                        ...(isOwnProfile ? {} : { isPublic: true }),
+                        parentId: null, // Only include root folders
+                    },
+                    select: {
+                        id: true,
+                        name: true,
+                        updatedAt: true,
+                        createdAt: true,
+                        isPublic: true,
+                        authorId: true,
+                        _count: {
+                            select: {
+                                notes: true,
+                                subfolders: true,
+                            },
+                        },
+                    },
+                    orderBy: { updatedAt: 'desc' },
+                    take: 5, // Limit to 5 most recent folders
+                },
             },
         });
 
@@ -53,14 +80,15 @@ export async function GET(
             );
         }
 
-        // Transform the response to include note counts
-        const publicUser = {
+        // Transform the response to include counts
+        const responseUser = {
             ...user,
-            totalPublicNotes: user._count.notes,
-            _count: undefined, // Remove the internal count object
+            totalNotes: user._count.notes,
+            totalFolders: user._count.folders,
+            _count: undefined,
         };
 
-        return NextResponse.json(publicUser);
+        return NextResponse.json(responseUser);
     } catch (error) {
         console.error('Error fetching user profile:', error);
         return NextResponse.json(

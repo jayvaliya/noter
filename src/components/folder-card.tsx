@@ -41,7 +41,7 @@ export const FolderCard: FC<FolderCardProps> = ({
 
     // Navigate to folder
     const handleFolderClick = () => {
-        router.push(`/notes/folders/${id}`);
+        router.push(`/folders/${id}`);
     };
 
     return (

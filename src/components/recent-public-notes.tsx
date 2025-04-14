@@ -22,7 +22,7 @@ export function RecentPublicNotes({
             setError(null);
 
             try {
-                const response = await fetch(`/api/public-notes?limit=${limit}`);
+                const response = await fetch(`/api/public/notes?limit=${limit}`);
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));

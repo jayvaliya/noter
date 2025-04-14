@@ -113,11 +113,6 @@ export default function FolderPage({ params }: { params: { id: string } }) {
 
     useEffect(() => {
         const fetchFolderContents = async () => {
-            // Remove the automatic redirection
-            // if (status === "unauthenticated") {
-            //     router.push('/signin');
-            //     return;
-            // }
 
             setIsLoading(true);
             setError(null);
@@ -334,7 +329,7 @@ export default function FolderPage({ params }: { params: { id: string } }) {
                     <div className="mb-6">
                         <FolderBreadcrumbs
                             breadcrumbs={folderContents.breadcrumbs}
-                            baseRoute="notes"
+                            baseRoute="folders"
                         />
                     </div>
 

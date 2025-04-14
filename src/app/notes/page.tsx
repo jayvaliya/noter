@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -86,8 +86,89 @@ export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalNotes, setTotalNotes] = useState(0);
 
-    // Replace both existing useEffects with this single one
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            if (!session?.user?.id) return;
+
+            // Use the new unified endpoint with pagination
+            const response = await fetch(`/api/users/${session.user.id}/notes?page=1&pageSize=10`);
+
+            if (!response.ok) {
+                throw new Error('Failed to load content');
+            }
+
+            const data = await response.json();
+
+            // Process notes with proper date objects
+            const processedNotes = data.notes.map((note: ApiNote) => ({
+                ...note,
+                updatedAt: new Date(note.updatedAt),
+                createdAt: new Date(note.createdAt)
+            }));
+            setNotes(processedNotes);
+            setTotalNotes(data.notes.total);
+            setCurrentPage(data.notes.page);
+
+            // Process folders
+            const processedFolders = data.folders.map((folder: ApiFolder) => ({
+                ...folder,
+                updatedAt: new Date(folder.updatedAt),
+                createdAt: new Date(folder.createdAt)
+            }));
+            setFolders(processedFolders);
+
+            // Process bookmarks if available
+            if (data.bookmarks) {
+                const processedBookmarks = data.bookmarks.map((note: ApiNote) => ({
+                    ...note,
+                    updatedAt: new Date(note.updatedAt),
+                    createdAt: new Date(note.createdAt)
+                }));
+                setBookmarkedNotes(processedBookmarks);
+            }
+        } catch (err) {
+            console.error('Error loading data:', err);
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [session]);
+
+    const loadMoreNotes = async () => {
+        if (!session?.user?.id) return;
+
+        try {
+            const nextPage = currentPage + 1;
+            const response = await fetch(
+                `/api/users/${session.user.id}/notes?page=${nextPage}&pageSize=10`
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to load more notes');
+            }
+
+            const data = await response.json();
+
+            // Process and append the new notes
+            const processedNotes = data.notes.items.map((note: ApiNote) => ({
+                ...note,
+                updatedAt: new Date(note.updatedAt),
+                createdAt: new Date(note.createdAt)
+            }));
+
+            setNotes(prev => [...prev, ...processedNotes]);
+            setCurrentPage(nextPage);
+        } catch (err) {
+            console.error('Error loading more notes:', err);
+        }
+    };
+
     useEffect(() => {
         // Check authentication status
         if (status === "unauthenticated") {
@@ -96,59 +177,9 @@ export default function Dashboard() {
         }
 
         if (status === "authenticated") {
-            const fetchData = async () => {
-                setIsLoading(true);
-                setError(null);
-
-                try {
-                    // 1. Fetch root folders
-                    const foldersResponse = await fetch('/api/folders');
-                    if (!foldersResponse.ok) {
-                        throw new Error('Failed to load folders');
-                    }
-                    const foldersData = await foldersResponse.json() as ApiFolder[];
-                    const processedFolders = foldersData.map((folder: ApiFolder) => ({
-                        ...folder,
-                        updatedAt: new Date(folder.updatedAt),
-                        createdAt: new Date(folder.createdAt)
-                    }));
-                    setFolders(processedFolders);
-
-                    // 2. Fetch ALL notes (not just root notes)
-                    const notesResponse = await fetch('/api/notes');
-                    if (!notesResponse.ok) {
-                        throw new Error('Failed to load notes');
-                    }
-                    const notesData = await notesResponse.json() as ApiNote[];
-                    const processedNotes = notesData.map((note: ApiNote) => ({
-                        ...note,
-                        updatedAt: new Date(note.updatedAt),
-                        createdAt: new Date(note.createdAt)
-                    }));
-                    setNotes(processedNotes);
-
-                    // 3. Fetch bookmarks
-                    const bookmarksResponse = await fetch('/api/bookmarks');
-                    if (bookmarksResponse.ok) {
-                        const bookmarksData = await bookmarksResponse.json() as ApiNote[];
-                        const processedBookmarks = bookmarksData.map((note: ApiNote) => ({
-                            ...note,
-                            updatedAt: new Date(note.updatedAt),
-                            createdAt: new Date(note.createdAt)
-                        }));
-                        setBookmarkedNotes(processedBookmarks);
-                    }
-                } catch (err) {
-                    console.error('Error loading data:', err);
-                    setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-
             fetchData();
         }
-    }, [status, router]);
+    }, [status, router, fetchData, session]);
 
     const handleCreateFolder = async (name: string, isPublic: boolean) => {
         try {
@@ -238,6 +269,8 @@ export default function Dashboard() {
     if (status === "loading" || isLoading) {
         return <Loading fullScreen size="large" />;
     }
+
+    const shouldShowLoadMore = notes.length < totalNotes;
 
     return (
         <ProtectedRoute>
@@ -352,6 +385,16 @@ export default function Dashboard() {
                                     />
                                 ))}
                             </div>
+                        </div>
+                    )}
+                    {shouldShowLoadMore && (
+                        <div className="flex justify-center mt-8">
+                            <button
+                                onClick={loadMoreNotes}
+                                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg"
+                            >
+                                Load More
+                            </button>
                         </div>
                     )}
                 </div>

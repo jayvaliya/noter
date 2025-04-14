@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { Note } from '@/types';
 
+// Fetch a single note by ID
+// This API route fetches a note by its ID and checks if the user has permission to view it
 export async function GET(
     req: NextRequest,
     context: { params: { id: string } }
@@ -76,6 +78,7 @@ export async function GET(
     }
 }
 
+// Delete note
 export async function DELETE(
     req: NextRequest,
     { params }: { params: { id: string } }

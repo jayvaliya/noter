@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 
-// Create new note.
+// Create new note. 
 export async function POST(req: NextRequest) {
     try {
         // Check if user is authenticated

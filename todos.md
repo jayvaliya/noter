@@ -2,17 +2,17 @@
 
 ## Yet to do
 
-- Show notes in alphabetical order.
 - Notion like Editor UI.
 - add AI Summarization.
-- Folder structure (No nested folders. Only root).
+- add caching layer using Redis.
 - optimize API call and database(Prisma) call before implementing object upload.
 - File upload feature.
 - make premium looking design.
-- add caching layer using Redis.
 
 ## COMPLETED
 
+- Folder structure (With nested folders).
+- Show notes in alphabetical order.
 - edit Notes.
 - better loading animation.
 - add bookmark feature.

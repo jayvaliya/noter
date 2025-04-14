@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 
+// This API route fetches all bookmarks for the authenticated user
 export async function GET() {
     try {
         // Check authentication

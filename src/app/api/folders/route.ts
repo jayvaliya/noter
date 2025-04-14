@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// Get all folders for the authenticated user
+// Fetch all folders for the authenticated user
+// This endpoint can be used to fetch folders for a specific parent folder or all folders if no parentId is provided
 export async function GET(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);

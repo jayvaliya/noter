@@ -35,7 +35,7 @@ export const FolderBreadcrumbs: React.FC<FolderBreadcrumbsProps> = ({ breadcrumb
                             </span>
                         ) : (
                             <Link
-                                href={`/${baseRoute}/folders/${breadcrumb.id}`}
+                                href={`/folders/${breadcrumb.id}`}
                                 className="text-sm text-zinc-400 hover:text-white truncate max-w-[150px]"
                             >
                                 {breadcrumb.name}

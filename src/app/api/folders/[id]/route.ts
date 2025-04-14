@@ -119,61 +119,6 @@ export async function GET(
     }
 }
 
-// Update folder
-export async function PATCH(
-    req: NextRequest,
-    context: { params: { id: string } }
-) {
-    try {
-        const folderId = await context.params.id;
-        const session = await getServerSession(authOptions);
-        const userId = session?.user?.id;
-
-        if (!userId) {
-            return NextResponse.json(
-                { message: 'You must be logged in to update folders' },
-                { status: 401 }
-            );
-        }
-
-        const folder = await prisma.folder.findUnique({
-            where: { id: folderId }
-        });
-
-        if (!folder) {
-            return NextResponse.json(
-                { message: 'Folder not found' },
-                { status: 404 }
-            );
-        }
-
-        if (folder.authorId !== userId) {
-            return NextResponse.json(
-                { message: 'You do not have permission to update this folder' },
-                { status: 403 }
-            );
-        }
-
-        const { name, isPublic } = await req.json();
-
-        const updatedFolder = await prisma.folder.update({
-            where: { id: folderId },
-            data: {
-                ...(name && { name }),
-                ...(isPublic !== undefined && { isPublic })
-            }
-        });
-
-        return NextResponse.json(updatedFolder);
-    } catch (error) {
-        console.error('Error updating folder:', error);
-        return NextResponse.json(
-            { message: 'An error occurred while updating the folder' },
-            { status: 500 }
-        );
-    }
-}
-
 // Delete folder
 export async function DELETE(
     req: NextRequest,

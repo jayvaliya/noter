@@ -64,7 +64,7 @@ export default function NewNote() {
 
             // Redirect either to the folder or to the notes page
             if (folderId) {
-                router.push(`/notes/folders/${folderId}`);
+                router.push(`/folders/${folderId}`);
             } else {
                 router.push('/notes');
             }

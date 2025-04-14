@@ -106,7 +106,7 @@ export default function ExplorePage() {
                 setFolders(processedFolders);
 
                 // Use the dedicated public notes endpoint 
-                const notesResponse = await fetch('/api/public-notes');
+                const notesResponse = await fetch('/api/public/notes');
 
                 if (!notesResponse.ok) {
                     const errorData = await notesResponse.json() as ApiError;

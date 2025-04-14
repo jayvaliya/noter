@@ -91,7 +91,7 @@ export const NoteCard: FC<NoteCardProps> = ({
     return (
         <div className="relative group">
             <div onClick={handleNoteClick} className="block cursor-pointer">
-                <div className="bg-zinc-900 backdrop-blur-sm rounded-lg border border-zinc-700 overflow-hidden hover:border-emerald-500 transition-all h-full">
+                <div className="bg-zinc-900 backdrop-blur-sm rounded-lg border border-zinc-700 overflow-hidden hover:border-emerald-500/50 transition-all h-full hover:translate-x-0.5 hover:-translate-y-0.5 hover:shadow-emerald-500/40 hover:shadow-md">
                     <div className="p-4">
                         {/* Three-dot menu button */}
                         <div className="absolute top-2 right-2">

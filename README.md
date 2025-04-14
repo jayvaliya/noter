@@ -4,27 +4,27 @@
 
 ## 📝 Overview
 
-Noter is a feature-rich note-taking application built with modern web technologies. It allows users to create, edit, and share notes with a beautiful, responsive interface. With collaborative features and bookmark functionality, Noter helps users organize their thoughts and share knowledge.
+Noter is a feature-rich note-taking application built with modern web technologies. It allows users to create, edit, and share notes with a beautiful, responsive interface. With folder organization, bookmark functionality, and public/private notes, Noter helps users organize their thoughts and share knowledge.
 
 ## ✨ Features
 
-- **💻 Rich Text Editing** - Create beautiful notes with a powerful WYSIWYG editor
+- **💻 Rich Text Editing** - Create beautiful notes with a powerful TipTap WYSIWYG editor
 - **🔍 Quick Search** - Find notes instantly with full-text search
 - **🔐 Private & Public Notes** - Control who can see your notes
 - **🔖 Bookmarks** - Save important notes for quick access
+- **📁 Folder Organization** - Organize notes in a folder structure
 - **👥 User Profiles** - Personalized spaces for your content
 - **🌐 Responsive Design** - Works seamlessly on desktop, tablet, and mobile devices
-- **🔄 Real-time Updates** - See changes immediately
-- **🔒 Secure Authentication** - Login with Google or email/password
+- **🔒 Secure Authentication** - Login with email/password and Google OAuth
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: [Next.js 15](https://nextjs.org/), [React](https://reactjs.org/), [TailwindCSS](https://tailwindcss.com/)
+- **Frontend**: [Next.js 15](https://nextjs.org/), [React 19](https://reactjs.org/), [TailwindCSS 4](https://tailwindcss.com/)
 - **Backend**: [Next.js API Routes](https://nextjs.org/docs/api-routes/introduction)
 - **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/)
 - **Authentication**: [NextAuth.js](https://next-auth.js.org/)
 - **Editor**: [TipTap](https://tiptap.dev/)
-- **Deployment**: [Vercel](https://vercel.com/) or [Netlify](https://www.netlify.com/)
+- **Deployment**: [Vercel](https://vercel.com/)
 
 ## 📋 Prerequisites
 
@@ -90,6 +90,7 @@ Noter uses Prisma ORM with a PostgreSQL database. The main models include:
 - User: User accounts and profiles
 - Note: The core note content with privacy settings
 - Bookmark: Saved notes for quick access
+- Folder: Organization structure for notes
 
 ## 📁 Project Structure
 
@@ -100,19 +101,25 @@ Noter uses Prisma ORM with a PostgreSQL database. The main models include:
 ├── /src
 │   ├── /app             # Next.js App Router pages
 │   │   ├── /api         # API routes
+│   │   │   ├── /auth    # Authentication endpoints
+│   │   │   ├── /bookmarks # Bookmark management
+│   │   │   ├── /folders # Folder management
+│   │   │   ├── /notes   # Note CRUD operations
+│   │   │   ├── /public  # Public notes/folders endpoints
+│   │   │   └── /users   # User profile endpoints
 │   │   ├── /bookmarks   # Bookmarks page
 │   │   ├── /explore     # Explore public notes
+│   │   ├── /folders     # Folder management
 │   │   ├── /notes       # User's notes and editor
 │   │   ├── /profile     # User profiles
 │   │   └── /signin      # Authentication pages
 │   ├── /components      # Reusable React components
 │   ├── /lib             # Utility functions and libraries
 │   └── /types           # TypeScript type definitions
-├── /styles              # Global styles
 ├── .env.local           # Environment variables (local)
 ├── .gitignore           # Git ignore file
-├── [package.json](http://_vscodecontentref_/1)         # Project dependencies
-└── [README.md](http://_vscodecontentref_/2)            # Project documentation
+├── package.json         # Project dependencies
+└── README.md            # Project documentation
 ```
 
 ## 🔐 Authentication
@@ -130,9 +137,14 @@ Noter provides RESTful API endpoints for:
 
 - /api/auth/* - Authentication endpoints
 - /api/notes - CRUD operations for notes
+- /api/notes/[id] - Individual note operations
 - /api/bookmarks - Managing bookmarked notes
-- /api/users - User profile data
-- /api/public-notes - Discover publicly shared notes
+- /api/folders - Folder management
+- /api/folders/[id] - Individual folder operations
+- /api/users/[id] - User profile data
+- /api/users/[id]/notes - User's notes
+- /api/public/notes - Discover publicly shared notes
+- /api/public/folders - Browse public folders
 
 ## 🚢 Deployment
 
@@ -144,7 +156,8 @@ Deploying to Vercel
 4. Configure environment variables
 5. Deploy
 
-# Update [package.json](http://_vscodecontentref_/3) scripts
+The package.json already includes the necessary scripts for Vercel deployment:
+
 ```bash
 "scripts": {
   "build": "prisma generate && next build",

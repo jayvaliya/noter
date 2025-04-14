@@ -5,9 +5,9 @@ import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { BsPersonFill, BsBookmarkFill, BsArrowLeft, BsGlobe } from 'react-icons/bs';
+import { BsPersonFill, BsBookmarkFill, BsArrowLeft, BsGlobe, BsFolder } from 'react-icons/bs';
 import { NoteCard } from '@/components/note-card';
-import { Note } from '@/types';
+import { FolderCard } from '@/components/folder-card';
 import Loading from '@/components/loading';
 
 // API response note interface (with string dates)
@@ -19,21 +19,21 @@ interface ApiNote {
     updatedAt: string;
     isPublic: boolean;
     authorId: string;
+    isBookmarked?: boolean;
 }
 
-// API error response type
-interface ApiError {
-    message: string;
-}
-
-// API response for user profile
-interface ApiUserProfile {
+// API response folder interface (with string dates)
+interface ApiFolder {
     id: string;
     name: string;
-    image: string | null;
-    email?: string;
-    totalPublicNotes: number;
-    notes: ApiNote[];
+    createdAt: string;
+    updatedAt: string;
+    isPublic: boolean;
+    authorId: string;
+    _count: {
+        notes: number;
+        subfolders: number;
+    };
 }
 
 // Processed user profile with Date objects
@@ -42,8 +42,29 @@ interface UserProfile {
     name: string;
     image: string | null;
     email?: string;
-    totalPublicNotes: number;
-    notes: Note[];
+    totalNotes: number;
+    totalFolders: number;
+    notes: Array<{
+        id: string;
+        title: string;
+        updatedAt: Date;
+        createdAt: Date;
+        isPublic: boolean;
+        authorId: string;
+        isBookmarked?: boolean;
+    }>;
+    folders: Array<{
+        id: string;
+        name: string;
+        updatedAt: Date;
+        createdAt: Date;
+        isPublic: boolean;
+        authorId: string;
+        _count: {
+            notes: number;
+            subfolders: number;
+        };
+    }>;
 }
 
 export default function ProfilePage() {
@@ -55,89 +76,87 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [loadingMore, setLoadingMore] = useState(false);
 
     const isOwnProfile = session?.user?.id === userId;
 
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchUserProfile = async () => {
             setIsLoading(true);
+            setError(null);
 
             try {
-                const response = await fetch("/api/users/" + userId);
+                // Fetch the user profile data
+                const userResponse = await fetch(`/api/users/${userId}`);
 
-                if (!response.ok) {
-                    if (response.status === 404) {
+                if (!userResponse.ok) {
+                    if (userResponse.status === 404) {
                         throw new Error('User not found');
                     }
-                    const errorData = await response.json() as ApiError;
-                    throw new Error(errorData.message || 'Failed to load profile');
+                    throw new Error('Failed to fetch user data');
                 }
 
-                const data = await response.json() as ApiUserProfile;
+                const userData = await userResponse.json();
 
-                // Convert dates and add a flag for the note cards
-                const profileData: UserProfile = {
-                    ...data,
-                    notes: data.notes.map((note: ApiNote) => ({
+                // Process dates in the profile data
+                const processedProfile = {
+                    ...userData,
+                    notes: userData.notes.map((note: ApiNote) => ({
                         ...note,
-                        createdAt: new Date(note.createdAt),
                         updatedAt: new Date(note.updatedAt),
+                        createdAt: new Date(note.createdAt)
                     })),
+                    folders: userData.folders.map((folder: ApiFolder) => ({
+                        ...folder,
+                        updatedAt: new Date(folder.updatedAt),
+                        createdAt: new Date(folder.createdAt)
+                    }))
                 };
 
-                setProfile(profileData);
-            } catch (err) {
-                console.error('Error loading profile:', err);
-                setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+                setProfile(processedProfile);
+
+                // Fetch additional content if needed in the future
+                // For now, the profile endpoint should return everything we need
+
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+                setError(error instanceof Error ? error.message : 'An unexpected error occurred');
             } finally {
                 setIsLoading(false);
             }
         };
 
-        if (userId) {
-            fetchProfile();
-        }
+        fetchUserProfile();
     }, [userId]);
 
-    const loadMoreNotes = async () => {
-        if (!profile || loadingMore) return;
+    // Function to handle folder actions
+    const handleFolderEdit = (folderId: string) => {
+        // This would be implemented as needed but likely redirect to edit page
+        router.push(`/folders/${folderId}/edit`);
+    };
 
-        setLoadingMore(true);
+    const handleFolderDelete = async (folderId: string) => {
+        if (confirm('Are you sure you want to delete this folder?')) {
+            try {
+                const response = await fetch(`/api/folders/${folderId}?keepContents=true`, {
+                    method: 'DELETE'
+                });
 
-        try {
-            // Skip the notes we already have
-            const response = await fetch('/api/users/' + userId + '/notes?skip=' + profile.notes.length);
+                if (!response.ok) {
+                    throw new Error('Failed to delete folder');
+                }
 
-            if (!response.ok) {
-                throw new Error('Failed to load more notes');
+                // Refresh the profile data
+                setProfile(prev => {
+                    if (!prev) return null;
+                    return {
+                        ...prev,
+                        folders: prev.folders.filter(folder => folder.id !== folderId)
+                    };
+                });
+            } catch (error) {
+                console.error('Error deleting folder:', error);
+                alert(error instanceof Error ? error.message : 'Failed to delete folder');
             }
-
-            const data = await response.json() as ApiNote[];
-
-            if (data.length === 0) {
-                // No more notes to load
-                return;
-            }
-
-            // Convert dates
-            const newNotes: Note[] = data.map((note: ApiNote) => ({
-                ...note,
-                createdAt: new Date(note.createdAt),
-                updatedAt: new Date(note.updatedAt),
-            }));
-
-            setProfile(prev => {
-                if (!prev) return null;
-                return {
-                    ...prev,
-                    notes: [...prev.notes, ...newNotes],
-                };
-            });
-        } catch (err) {
-            console.error('Error loading more notes:', err);
-        } finally {
-            setLoadingMore(false);
         }
     };
 
@@ -214,7 +233,14 @@ export default function ProfilePage() {
                                 <div className="px-4 py-2 bg-zinc-800 rounded-lg flex items-center">
                                     <BsGlobe className="text-emerald-500 mr-2" />
                                     <span className="text-zinc-300">
-                                        {profile.totalPublicNotes} public {profile.totalPublicNotes === 1 ? 'note' : 'notes'}
+                                        {profile.totalNotes} {isOwnProfile ? '' : 'public'} {profile.totalNotes === 1 ? 'note' : 'notes'}
+                                    </span>
+                                </div>
+
+                                <div className="px-4 py-2 bg-zinc-800 rounded-lg flex items-center">
+                                    <BsFolder className="text-yellow-500 mr-2" />
+                                    <span className="text-zinc-300">
+                                        {profile.totalFolders} {isOwnProfile ? '' : 'public'} {profile.totalFolders === 1 ? 'folder' : 'folders'}
                                     </span>
                                 </div>
 
@@ -241,59 +267,62 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Public notes section */}
+                {/* Folders section */}
+                {profile.folders && profile.folders.length > 0 && (
+                    <div className="mb-12">
+                        <h2 className="text-xl font-bold text-white mb-6 flex items-center">
+                            <BsFolder className="mr-2 text-yellow-500" />
+                            {isOwnProfile
+                                ? `Your ${!isOwnProfile ? 'public ' : ''}folders`
+                                : `${profile.name}'s public folders`}
+                        </h2>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {profile.folders.map(folder => (
+                                <FolderCard
+                                    key={folder.id}
+                                    id={folder.id}
+                                    name={folder.name}
+                                    updatedAt={folder.updatedAt}
+                                    isPublic={folder.isPublic}
+                                    isOwner={isOwnProfile}
+                                    noteCount={folder._count.notes}
+                                    subfolderCount={folder._count.subfolders}
+                                    onEdit={handleFolderEdit}
+                                    onDelete={handleFolderDelete}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Notes section */}
                 <div>
                     <h2 className="text-xl font-bold text-white mb-6 flex items-center">
                         <BsGlobe className="mr-2 text-emerald-500" />
-                        {isOwnProfile ? 'Your public notes' : 'Public notes by this user'}
+                        {isOwnProfile
+                            ? `Your ${!isOwnProfile ? 'public ' : ''}notes`
+                            : `${profile.name}'s public notes`}
                     </h2>
 
                     {profile.notes.length > 0 ? (
-                        <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {profile.notes.map(note => (
-                                    <NoteCard
-                                        key={note.id}
-                                        id={note.id}
-                                        title={note.title}
-                                        content={note.content}
-                                        createdAt={note.createdAt}
-                                        updatedAt={note.updatedAt}
-                                        author={{
-                                            id: profile.id,
-                                            name: profile.name,
-                                            image: profile.image
-                                        }}
-                                        isPublic={note.isPublic}
-                                        isOwner={isOwnProfile}
-                                    />
-                                ))}
-                            </div>
-
-                            {profile.totalPublicNotes > profile.notes.length && (
-                                <div className="mt-8 text-center">
-                                    <button
-                                        onClick={loadMoreNotes}
-                                        disabled={loadingMore}
-                                        className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                                    >
-                                        {loadingMore ? (
-                                            <div className="flex gap-1.5 items-center justify-center">
-                                                <Loading size="small" />
-                                                Loading more...
-                                            </div>
-                                        ) : (
-                                            'Load more notes'
-                                        )}
-                                    </button>
-                                </div>
-                            )}
-                        </>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {profile.notes.map(note => (
+                                <NoteCard
+                                    key={note.id}
+                                    id={note.id}
+                                    title={note.title}
+                                    updatedAt={note.updatedAt}
+                                    isBookmarked={note.isBookmarked}
+                                    isOwner={isOwnProfile}
+                                />
+                            ))}
+                        </div>
                     ) : (
                         <div className="bg-zinc-800/30 backdrop-blur-sm rounded-lg border border-zinc-700 p-8 text-center">
                             <p className="text-zinc-400">
                                 {isOwnProfile
-                                    ? "You haven't published any public notes yet."
+                                    ? "You haven't created any notes yet."
                                     : "This user hasn't published any public notes yet."}
                             </p>
 
@@ -302,7 +331,7 @@ export default function ProfilePage() {
                                     href="/notes/new"
                                     className="inline-block mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
                                 >
-                                    Create your first public note
+                                    Create your first note
                                 </Link>
                             )}
                         </div>

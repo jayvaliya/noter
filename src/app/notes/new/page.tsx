@@ -83,11 +83,15 @@ export default function NewNote() {
         );
     }
 
+    // Update the container styling to give the editor proper boundaries
     return (
-        <div className="min-h-screen bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen pb-20 bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-5xl mx-auto">
-                {/* Header with back button */}
-                <div className="mb-8 flex items-center justify-between">
+                {/* Header with back button - add data-navbar attribute */}
+                <div
+                    className="mb-8 flex items-center justify-between sticky top-0 z-40 bg-zinc-950 py-2"
+                    data-navbar="true"
+                >
                     <div className="flex items-center">
                         <Link
                             href="/notes"
@@ -154,12 +158,14 @@ export default function NewNote() {
                     </span>
                 </div>
 
-                {/* TipTap Editor */}
-                <TipTapEditor
-                    value={content}
-                    onChange={setContent}
-                    placeholder="Start writing your note..."
-                />
+                {/* TipTap Editor with container that has a specific height constraint */}
+                <div className="mb-20">
+                    <TipTapEditor
+                        value={content}
+                        onChange={setContent}
+                        placeholder="Start writing your note..."
+                    />
+                </div>
             </div>
         </div>
     );

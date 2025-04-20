@@ -329,7 +329,7 @@ export default function FolderPage({ params }: { params: { id: string } }) {
                     <div className="mb-6">
                         <FolderBreadcrumbs
                             breadcrumbs={folderContents.breadcrumbs}
-                            baseRoute="folders"
+                            baseRoute="notes"
                         />
                     </div>
 

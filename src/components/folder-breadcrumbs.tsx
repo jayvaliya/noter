@@ -9,7 +9,7 @@ interface Breadcrumb {
 
 interface FolderBreadcrumbsProps {
     breadcrumbs: Breadcrumb[];
-    baseRoute: string; // 'notes' or 'explore'
+    baseRoute: string; // 'notes' or 'explore' [it tell from where the user is being redirected to folders page (to send user back from where they came)].
 }
 
 export const FolderBreadcrumbs: React.FC<FolderBreadcrumbsProps> = ({ breadcrumbs, baseRoute }) => {

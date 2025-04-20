@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { NoteCard } from '@/components/note-card';
 import { FolderCard } from '@/components/folder-card';
-import { BsExclamationCircle } from 'react-icons/bs';
+import { BsExclamationCircle, BsGlobeCentralSouthAsia } from 'react-icons/bs';
 import Loading from '@/components/loading';
 
 // Updated Author interface
@@ -148,7 +148,8 @@ export default function ExplorePage() {
                         <p>{error}</p>
                     </div>
                 )}
-
+                <div className="text-3xl mb-10 font-bold text-white flex gap-2 items-center">
+                    <BsGlobeCentralSouthAsia />Explore the world of knowledge</div>
                 {folders.length > 0 && (
                     <div className="mb-10">
                         <h2 className="text-2xl font-bold text-white mb-6">Public Folders</h2>

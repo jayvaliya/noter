@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -7,7 +9,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
-import { useState, useRef } from 'react';
+import TextStyle from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
 import {
     BsTypeBold, BsTypeItalic, BsTypeStrikethrough,
     BsListOl, BsListUl, BsLink45Deg,
@@ -20,6 +23,60 @@ import { PiHighlighterFill } from 'react-icons/pi';
 import { FaQuoteLeft } from 'react-icons/fa';
 import { HiOutlineCodeBracket } from 'react-icons/hi2';
 import { TipTapEditorProps, FontOption } from '@/types';
+import { Extension } from '@tiptap/core';
+
+// Add type declaration for the custom command
+declare module '@tiptap/core' {
+    interface Commands<ReturnType> {
+        fontFamily: {
+            setFontFamily: (fontFamily: string) => ReturnType
+        }
+    }
+}
+
+// Add this before your TipTapEditor component
+const FontFamily = Extension.create({
+    name: 'fontFamily',
+
+    addOptions() {
+        return {
+            types: ['textStyle'],
+        }
+    },
+
+    addGlobalAttributes() {
+        return [
+            {
+                types: this.options.types,
+                attributes: {
+                    fontFamily: {
+                        default: null,
+                        parseHTML: element => element.style.fontFamily,
+                        renderHTML: attributes => {
+                            if (!attributes.fontFamily) {
+                                return {}
+                            }
+
+                            return {
+                                style: `font-family: ${attributes.fontFamily}`,
+                            }
+                        },
+                    },
+                },
+            },
+        ]
+    },
+
+    addCommands() {
+        return {
+            setFontFamily: fontFamily => ({ chain }) => {
+                return chain()
+                    .setMark('textStyle', { fontFamily })
+                    .run()
+            },
+        }
+    },
+})
 
 export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...' }: TipTapEditorProps) => {
     const [isLinkInputVisible, setIsLinkInputVisible] = useState(false);
@@ -59,6 +116,9 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                 alignments: ['left', 'center', 'right'],
             }),
             Typography,
+            TextStyle,
+            FontFamily,
+            Color,
             Highlight.configure({
                 HTMLAttributes: {
                     class: 'bg-yellow-200/20 rounded px-1 text-white',
@@ -106,7 +166,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
     };
 
     const setFontFamily = (fontFamily: string) => {
-        editor.chain().focus().setMark('textStyle', { fontFamily }).run();
+        editor.chain().focus().setFontFamily(fontFamily).run();
         setShowFontOptions(false);
     };
 
@@ -114,19 +174,22 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
         <div className="relative">
             {/* Main editor content */}
             <div ref={containerRef} className="bg-zinc-800/30 backdrop-blur-sm border border-zinc-700 rounded-lg overflow-hidden">
-                <EditorContent editor={editor} className="prose prose-invert max-w-none focus:outline-none min-h-64 p-4" />
+                <EditorContent
+                    editor={editor}
+                    className="prose prose-invert max-w-none focus:outline-none min-h-64 p-4 [&_[style*='font-family']]:!font-override"
+                />
             </div>
 
             {/* Left-side fixed toolbar - MADE LARGER */}
             <div
                 ref={toolbarRef}
-                className="fixed left-4 top-1/2 -translate-y-1/2 bg-zinc-800 border border-zinc-700 rounded-lg p-3 z-30 shadow-lg"
+                className="fixed left-4 top-1/2 -translate-y-1/2 bg-zinc-800 border border-zinc-700 rounded-lg p-1.5 z-30 shadow-lg"
                 style={{ width: '110px' }} // Increased width
             >
                 {/* Grid layout for two columns */}
-                <div className="grid grid-cols-2 gap-2"> {/* Increased gap */}
+                <div className="grid grid-cols-2 gap-2">
                     {/* First column - Formatting options */}
-                    <div className="flex flex-col gap-2"> {/* Increased gap */}
+                    <div className="flex flex-col gap-2">
                         {/* Font Family */}
                         <div className="relative">
                             <button
@@ -134,11 +197,11 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                                 className="p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center w-full"
                                 title="Font Family"
                             >
-                                <span className="text-sm font-medium">Aa</span> {/* Increased font size */}
+                                <span className="text-sm font-medium">Fonts</span>
                             </button>
 
                             {showFontOptions && (
-                                <div className="absolute z-10 right-full mr-2 top-0 bg-zinc-800 border border-zinc-700 rounded shadow-lg">
+                                <div className="absolute z-10 left-full mr-2 top-0 bg-zinc-800 border border-zinc-700 rounded shadow-lg">
                                     {fontOptions.map((font) => (
                                         <button
                                             key={font.value}
@@ -158,7 +221,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('bold') ? 'bg-zinc-700 text-white' : ''}`}
                             title="Bold (Ctrl+B)"
                         >
-                            <BsTypeBold className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsTypeBold className="w-5 h-5" />
                         </button>
 
                         <button
@@ -166,7 +229,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('italic') ? 'bg-zinc-700 text-white' : ''}`}
                             title="Italic (Ctrl+I)"
                         >
-                            <BsTypeItalic className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsTypeItalic className="w-5 h-5" />
                         </button>
 
                         <button
@@ -174,7 +237,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('highlight') ? 'bg-zinc-700 text-white' : ''}`}
                             title="Highlight"
                         >
-                            <PiHighlighterFill className="w-5 h-5" /> {/* Increased icon size */}
+                            <PiHighlighterFill className="w-5 h-5" />
                         </button>
 
                         <button
@@ -182,7 +245,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('codeBlock') ? 'bg-zinc-700 text-white' : ''}`}
                             title="Code Block"
                         >
-                            <BsFileEarmarkCode className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsFileEarmarkCode className="w-5 h-5" />
                         </button>
 
                         <button
@@ -190,7 +253,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('code') ? 'bg-zinc-700 text-white' : ''}`}
                             title="Inline Code"
                         >
-                            <TbCodeVariable className="w-5 h-5" /> {/* Increased icon size */}
+                            <TbCodeVariable className="w-5 h-5" />
                         </button>
 
                         <button
@@ -198,7 +261,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive({ textAlign: 'left' }) ? 'bg-zinc-700 text-white' : ''}`}
                             title="Align Left"
                         >
-                            <BsTextLeft className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsTextLeft className="w-5 h-5" />
                         </button>
 
                         <button
@@ -206,7 +269,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive({ textAlign: 'center' }) ? 'bg-zinc-700 text-white' : ''}`}
                             title="Align Center"
                         >
-                            <BsTextCenter className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsTextCenter className="w-5 h-5" />
                         </button>
 
                         <button
@@ -214,18 +277,18 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive({ textAlign: 'right' }) ? 'bg-zinc-700 text-white' : ''}`}
                             title="Align Right"
                         >
-                            <BsTextRight className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsTextRight className="w-5 h-5" />
                         </button>
                     </div>
 
                     {/* Second column - Headings, Lists and more */}
-                    <div className="flex flex-col gap-2"> {/* Increased gap */}
+                    <div className="flex flex-col gap-2">
                         <button
                             onClick={() => toggleHeading(1)}
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('heading', { level: 1 }) ? 'bg-zinc-700 text-white' : ''}`}
                             title="Heading 1"
                         >
-                            <span className="text-sm font-bold">H1</span> {/* Increased font size */}
+                            <span className="text-sm font-bold">H1</span>
                         </button>
 
                         <button
@@ -233,7 +296,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('heading', { level: 2 }) ? 'bg-zinc-700 text-white' : ''}`}
                             title="Heading 2"
                         >
-                            <span className="text-sm font-bold">H2</span> {/* Increased font size */}
+                            <span className="text-sm font-bold">H2</span>
                         </button>
 
                         <button
@@ -241,7 +304,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('heading', { level: 3 }) ? 'bg-zinc-700 text-white' : ''}`}
                             title="Heading 3"
                         >
-                            <span className="text-sm font-bold">H3</span> {/* Increased font size */}
+                            <span className="text-sm font-bold">H3</span>
                         </button>
 
                         <button
@@ -249,7 +312,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('bulletList') ? 'bg-zinc-700 text-white' : ''}`}
                             title="Bullet List"
                         >
-                            <BsListUl className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsListUl className="w-5 h-5" />
                         </button>
 
                         <button
@@ -257,7 +320,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('orderedList') ? 'bg-zinc-700 text-white' : ''}`}
                             title="Ordered List"
                         >
-                            <BsListOl className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsListOl className="w-5 h-5" />
                         </button>
 
                         <button
@@ -265,7 +328,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('blockquote') ? 'bg-zinc-700 text-white' : ''}`}
                             title="Quote"
                         >
-                            <FaQuoteLeft className="w-5 h-5" /> {/* Increased icon size */}
+                            <FaQuoteLeft className="w-5 h-5" />
                         </button>
 
                         <button
@@ -277,7 +340,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className={`p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center ${editor.isActive('link') ? 'bg-zinc-700 text-white' : ''}`}
                             title="Link"
                         >
-                            <BsLink45Deg className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsLink45Deg className="w-5 h-5" />
                         </button>
 
                         <button
@@ -286,7 +349,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className="p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Undo"
                         >
-                            <BsArrowCounterclockwise className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsArrowCounterclockwise className="w-5 h-5" />
                         </button>
 
                         <button
@@ -295,14 +358,14 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             className="p-2 rounded hover:bg-zinc-700 text-zinc-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Redo"
                         >
-                            <BsArrowClockwise className="w-5 h-5" /> {/* Increased icon size */}
+                            <BsArrowClockwise className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Link input popup */}
-            {isLinkInputVisible && (
+            {/* Link input popup with Portal */}
+            {isLinkInputVisible && createPortal(
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-zinc-800 rounded-lg p-4 max-w-sm w-full">
                         <h3 className="text-white text-lg mb-4">Insert Link</h3>
@@ -329,7 +392,8 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Enhanced Bubble menu for highlighted text */}
@@ -355,7 +419,7 @@ export const TipTapEditor = ({ value, onChange, placeholder = 'Start writing...'
                         onClick={() => editor.chain().focus().toggleHighlight().run()}
                         className={`p-2 text-sm ${editor.isActive('highlight') ? 'bg-zinc-700 text-white' : 'text-zinc-300'}`}
                     >
-                        <TbCodeVariable />
+                        <PiHighlighterFill />
                     </button>
                     <button
                         onClick={() => editor.chain().focus().toggleStrike().run()}

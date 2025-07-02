@@ -18,7 +18,7 @@
     "@headlessui/react": "^2.2.1",
     "@lottiefiles/dotlottie-react": "^0.13.3",
     "@prisma/client": "^6.5.0",
-    "@tiptap/extension-color": "^2.11.7",
+    "@tiptap/extension-color": "^2.23.1",
     "@tiptap/extension-font-family": "^2.11.7",
     "@tiptap/extension-highlight": "^2.11.7",
     "@tiptap/extension-link": "^2.11.7",

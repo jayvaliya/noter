@@ -3,7 +3,7 @@ import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 
 // Add public paths that don't require authentication
-const publicPaths = ['/', '/signin', '/signup', '/api/auth', '/explore', '/api/public/notes', '/profile', '/api/users', '/api/users/[id]', '/api/folders', '/api/folders/[id]', '/api/notes/[id]', '/api/bookmarks/[noteId]', '/api/public/folders', '/api/public/notes', '/folders/[id]', '/notes/[id]', '/bookmarks/[noteId]', '/folders/[id]', '/folders'];
+const publicPaths = ['/', '/signin', '/signup', '/api/auth', '/explore', '/api/public/explore', '/profile', '/api/users', '/api/users/[id]', '/api/folders', '/api/folders/[id]', '/api/notes/[id]', '/api/bookmarks/[noteId]', '/folders/[id]', '/notes/[id]', '/bookmarks/[noteId]', '/folders/[id]', '/folders'];
 
 export async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;
@@ -34,6 +34,6 @@ export async function middleware(request: NextRequest) {
 // Match all routes except for static files, API routes that don't need auth, etc.
 export const config = {
     matcher: [
-        '/((?!_next/static|_next/image|favicon.ico|api/public/notes|images).*)',
+        '/((?!_next/static|_next/image|favicon.ico|api/public/explore|api/public/notes|api/public/folders|images).*)',
     ],
 };

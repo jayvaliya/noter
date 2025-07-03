@@ -69,9 +69,15 @@ interface Folder {
     };
 }
 
-// API error response type
-interface ApiError {
-    message: string;
+// Interface for the unified explore API response
+interface ExploreApiResponse {
+    folders: ApiFolder[];
+    notes: ApiNote[];
+    meta: {
+        totalFolders: number;
+        totalNotes: number;
+        timestamp: string;
+    };
 }
 
 export default function ExplorePage() {
@@ -93,42 +99,31 @@ export default function ExplorePage() {
                 setIsLoading(true);
                 setError(null);
 
-                // Use the dedicated public folders endpoint
-                const foldersResponse = await fetch('/api/public/folders');
+                // Use the new unified public explore endpoint
+                const response = await fetch('/api/public/explore');
 
-                if (!foldersResponse.ok) {
-                    throw new Error('Failed to fetch public folders');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch public content');
                 }
 
-                const foldersData = await foldersResponse.json();
+                const data = await response.json() as ExploreApiResponse;
 
                 // Process folder dates
-                const processedFolders = foldersData.map((folder: ApiFolder) => ({
+                const processedFolders = data.folders.map((folder: ApiFolder) => ({
                     ...folder,
                     updatedAt: new Date(folder.updatedAt),
                     createdAt: new Date(folder.createdAt)
                 }));
 
-                setFolders(processedFolders);
-                setOriginalFolders(processedFolders);
-
-                // Use the dedicated public notes endpoint 
-                const notesResponse = await fetch('/api/public/notes');
-
-                if (!notesResponse.ok) {
-                    const errorData = await notesResponse.json() as ApiError;
-                    throw new Error(errorData.message || 'Failed to fetch public notes');
-                }
-
-                const notesData = await notesResponse.json() as ApiNote[];
-
                 // Process notes with dates
-                const processedNotes = notesData.map((note: ApiNote) => ({
+                const processedNotes = data.notes.map((note: ApiNote) => ({
                     ...note,
                     updatedAt: new Date(note.updatedAt),
                     createdAt: new Date(note.createdAt)
                 }));
 
+                setFolders(processedFolders);
+                setOriginalFolders(processedFolders);
                 setPublicNotes(processedNotes);
                 setOriginalPublicNotes(processedNotes);
             } catch (err) {
@@ -317,7 +312,7 @@ export default function ExplorePage() {
                 {folders.length > 0 && (
                     <div className="mb-10">
                         <h2 className="text-2xl font-bold text-white mb-6">
-                            {isSearchMode ? "Matching Folders" : "Public Folders"}
+                            {isSearchMode ? "Matching Folders" : "Latest Public Folders"}
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {folders.map(folder => (
@@ -351,7 +346,7 @@ export default function ExplorePage() {
                 )}
 
                 <h2 className="text-2xl font-bold text-white mb-6">
-                    {isSearchMode ? "Matching Notes" : "Public Notes"}
+                    {isSearchMode ? "Matching Notes" : "Latest Public Notes"}
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

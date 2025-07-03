@@ -22,7 +22,7 @@ export function RecentPublicNotes({
             setError(null);
 
             try {
-                const response = await fetch(`/api/public/notes?limit=${limit}`);
+                const response = await fetch(`/api/public/explore`);
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
@@ -31,14 +31,15 @@ export function RecentPublicNotes({
 
                 const data = await response.json();
 
-                // Convert date strings to Date objects
-                const notesWithDates = data.map((note: Note) => ({
+                // Extract notes from the unified response and convert date strings to Date objects
+                const notesWithDates = data.notes.map((note: Note) => ({
                     ...note,
                     createdAt: new Date(note.createdAt),
                     updatedAt: new Date(note.updatedAt),
                 }));
 
-                setNotes(notesWithDates);
+                // Apply limit on the frontend since API now returns fixed amount
+                setNotes(notesWithDates.slice(0, limit));
             } catch (err) {
                 console.error('Error fetching public notes:', err);
                 setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -87,11 +88,8 @@ export function RecentPublicNotes({
                                     key={note.id}
                                     id={note.id}
                                     title={note.title}
-                                    content={note.content}
-                                    createdAt={note.createdAt}
                                     updatedAt={note.updatedAt}
-                                    author={note.author}
-                                    isPublic={note.isPublic}
+                                    isBookmarked={note.isBookmarked}
                                     isOwner={false}
                                 />
                             ))

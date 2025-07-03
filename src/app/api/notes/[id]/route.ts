@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
+import { redis } from '@/lib/redis';
 import { authOptions } from '@/lib/auth';
 import { Note } from '@/types';
 
@@ -15,6 +16,20 @@ export async function GET(
         const noteId = resolvedParams.id;
         const session = await getServerSession(authOptions);
         const userId = session?.user?.id;
+
+        // Create cache key based on note ID and user authentication status
+        const cacheKey = `note:${noteId}:${userId || 'anonymous'}`;
+
+        try {
+            // Try to get from cache first
+            const cachedNote = await redis.get<Note>(cacheKey);
+            if (cachedNote) {
+                return NextResponse.json(cachedNote);
+            }
+        } catch (cacheError) {
+            console.error('Redis cache read error:', cacheError);
+            // Continue with database query if cache fails
+        }
 
         // Fetch the note with minimum required fields
         const note = await prisma.note.findUnique({
@@ -67,6 +82,14 @@ export async function GET(
             isBookmarked: userId && 'bookmarks' in note ? note.bookmarks.length > 0 : false,
             bookmarks: undefined,
         };
+
+        // Cache the response for 5 minutes (300 seconds)
+        try {
+            await redis.setex(cacheKey, 300, noteResponse);
+        } catch (cacheError) {
+            console.error('Redis cache write error:', cacheError);
+            // Continue even if caching fails
+        }
 
         return NextResponse.json(noteResponse);
     } catch (error) {
@@ -127,6 +150,14 @@ export async function DELETE(
                 id: noteId,
             },
         });
+
+        // Invalidate cache for this note (all users)
+        try {
+            await redis.del(`note:${noteId}:${userId}`);
+            await redis.del(`note:${noteId}:anonymous`);
+        } catch (cacheError) {
+            console.error('Redis cache invalidation error:', cacheError);
+        }
 
         return NextResponse.json({ message: 'Note deleted successfully' });
     } catch (error) {
@@ -214,6 +245,14 @@ export async function PATCH(
                 authorId: true
             }
         });
+
+        // Invalidate cache for this note (all users)
+        try {
+            await redis.del(`note:${noteId}:${userId}`);
+            await redis.del(`note:${noteId}:anonymous`);
+        } catch (cacheError) {
+            console.error('Redis cache invalidation error:', cacheError);
+        }
 
         return NextResponse.json(updatedNote);
     } catch (error) {

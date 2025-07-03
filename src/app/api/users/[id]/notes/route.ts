@@ -5,10 +5,11 @@ import { authOptions } from '@/lib/auth';
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const userId = params.id;
+        const resolvedParams = await params;
+        const userId = resolvedParams.id;
         const session = await getServerSession(authOptions);
         const isOwner = session?.user?.id === userId;
 
